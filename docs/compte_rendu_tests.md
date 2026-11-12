@@ -1,43 +1,43 @@
-# Compte rendu des tests — Huy-Ming Banchongphanith
+# Compte rendu des tests — Huy-Ming
 
-## Périmètre et protocole
+## Scénarios
 
-Mesures produites le 12 novembre 2026 avec le moteur original de Kerem, sans modification de l'interface, des feux ou de la circulation. Les fichiers sont dans `scenarios/`, `sql/` et `docs/`. Les UUID, configurations complètes et empreinte SHA-256 du moteur figurent dans `resultats_mesures.json`.
+- **Urgence (S01)** : ambulance seule, arrivée à 5 s, Ouest vers Est.
+- **Normal (S02)** : quatre voitures Nord/Sud à 0 et 1 s ; ambulance à 2 s.
+- **Dense (S03)** : trois voitures Ouest vers Est à 0, 1 et 2 s, une Nord vers Sud à 0 s ; ambulance derrière elles à 5 s.
 
-- S01, `scenario_urgence.json` : ambulance seule Ouest → Est à 5 s.
-- S02, `scenario_normal.json` : quatre véhicules Nord/Sud à 0 et 1 s ; ambulance Ouest → Est à 2 s.
-- S03, `scenario_dense.json` : trois véhicules Ouest → Est à 0, 1 et 2 s, un Nord → Sud à 0 s ; ambulance derrière la file à 5 s. « Dense » désigne ici une file locale, pas une mesure représentative d'une ville.
+Les voitures roulent à 61 pixels/s et l'ambulance à 74 pixels/s. Toutes apparaissent au début de leur trajet. Initialement, F1/F3 sont verts et F2/F4/F5 rouges. Les JSON sont en version 4, correspondant au format simplifié.
 
-Vitesses : 61 pixels/s pour les véhicules ordinaires, 74 pour l'ambulance. Carrefour initialement vide ; positions à l'apparition : début du trajet (`s=0`). Feux F1/F3 verts, F2/F4/F5 rouges. Pas fixe de 0,05 s. Géométrie, phases et horaires sont enregistrés dans les JSON. Les deux essais utilisent les mêmes données et des instances neuves du moteur.
+## Méthode
 
-Le départ mesuré est le début du pas dans lequel l'ambulance apparaît ; l'arrivée est le seuil du moteur original, longueur du trajet moins 15 pixels. Ce choix respecte son ordre de calcul (création puis mouvement dans le pas). Il peut décaler le départ d'un pas par rapport à l'horaire demandé. Durée = arrivée − départ, gain = durée SANS − durée AVEC ; un gain négatif reste négatif. Les attentes avant apparition ne sont pas incluses. Une limite de 120 s produit un essai interrompu, sans durée finale ni gain comparable.
+Le script utilise le moteur de Kerem sans modifier ses fichiers. Chaque scénario est exécuté en deux essais successifs SANS et AVEC priorité : mêmes véhicules, horaires, vitesses et trajets ; seul le booléen de priorité change.
 
-## Résultats réellement exécutés
+Le départ est le début du pas de calcul où l'ambulance apparaît. L'arrivée est le seuil prévu par le moteur : longueur du trajet moins 15 pixels. Le pas vaut 0,05 s. La durée est arrivée − départ ; le gain est durée SANS − durée AVEC. Au-delà de 120 s, l'essai est interrompu, sans durée finale.
 
-| Scénario | Sans priorité (s) | Avec priorité (s) | Gain (s) |
+## Résultats mesurés le 12 novembre 2026
+
+| Scénario | Sans (s) | Avec (s) | Gain (s) |
 |---|---:|---:|---:|
-| S02 | 23.45 | 13.15 | +10.30 |
-| S03 | 24.80 | 17.50 | +7.30 |
-| S01 | 20.45 | 13.15 | +7.30 |
+| Urgence | 20,45 | 13,15 | +7,30 |
+| Normal | 23,45 | 13,15 | +10,30 |
+| Dense | 24,80 | 17,50 | +7,30 |
 
-Ces résultats proviennent du moteur local, avec enregistrement et relecture MariaDB réussis. Ils ne viennent pas du tableau fictif envoyé par Kerem. La priorité réduit l'attente au feu ; dans S03, les véhicules devant l'ambulance limitent l'amélioration. Le détail des départs et arrivées est conservé dans le JSON associé.
+Ces valeurs ont été recalculées avec le code simplifié, sauvegardées puis relues dans MariaDB. Les conditions et identifiants sont dans `resultats_mesures.json`. La priorité réduit l'attente au feu ; la file de véhicules devant l'ambulance limite le gain dans le scénario dense.
 
-## Vérifications
+## Tests effectués
 
-- Deux tests de scénarios réussis : répétition de chaque paire, paramètres inchangés, identifiants distincts, durée et gain recalculés, interruption avant arrivée.
-- Trente tests de données réussis sur MariaDB 13.0.2 : insertions, relecture, gains positif/nul/négatif, essais incomplets, horodatages invalides, transactions et rollback, doublons, événements concurrents et séparation des essais.
-- `donnees_test.sql` exécuté dans la base de test : insertions et SELECT vérifiés, transaction validée, gain fictif +3 s.
+- Trois tests automatisés : reproductibilité des trois scénarios, calcul des gains positif/négatif/nul ou incomplet, interruption.
+- Vérifications MariaDB : sauvegarde et relecture, perte de temps conservée, essai incomplet et rollback en cas de durée incorrecte.
+- Les données fictives de `donnees_test.sql` sont marquées EXEMPLE, séparément des mesures SIMULATION.
 
-## Difficultés et limites
+## Limites et travail restant
 
-Le moteur initial prend son scénario dans une constante Python. Le script de Huy-Ming charge donc une instance isolée de ce module et remplace uniquement son calendrier en mémoire. L'interface reste inchangée et ne sélectionne pas encore ces JSON. Une différence d'encodage Windows a été détectée lors des tests : la lecture des JSON utilise explicitement UTF-8 afin de conserver une empreinte identique.
+La version simplifiée n'utilise plus de gestionnaire d'événements réseau ni de tests concurrents. Elle sauvegarde directement les deux essais dans une transaction : soit tout est enregistré, soit rien. Les contrôles essentiels et les requêtes SQL paramétrées sont conservés.
 
-La priorité est locale ; le serveur TCP n'est pas encore raccordé. Les pixels ne sont pas des mètres. Le moteur ne gère pas complètement les conflits de trajectoires, les fusions et l'occupation du carrefour à chaque changement de phase. Les configurations évitent les apparitions simultanées sur une même voie ; le moteur ne possède pas de file d'entrée hors champ. Ces tests ne démontrent ni une absence de collision, ni une aptitude au déploiement réel.
+Le programme est pédagogique : les pixels ne sont pas des mètres, le contrôleur est local, et tous les conflits de circulation ne sont pas modélisés. « Dense » décrit une file locale, pas le trafic d'une ville entière. Les JSON sont destinés au moteur actuel ; un changement de ses trajets ou de ses règles demande de vérifier les scénarios à nouveau.
 
-## État des tâches et travail commun restant
+Les tâches de scénarios, calculs, SQL, sauvegarde par script et documentation sont réalisées. Le raccordement à l'interface de Kerem et au serveur de Youssef, les tests communs et la soutenance restent à faire ensemble.
 
-Les scénarios, comparaisons en script, calculs, tables, scripts SQL, sauvegarde directe MariaDB, tests et documentation sont fournis. La tâche 6 est réalisée pour le script et reste à finaliser pour l'application et le serveur avec Kerem et Youssef. La tâche 9 reste également ouverte pour les vérifications communes et la soutenance. Aucun temps réel de travail collectif n'est inventé : les relevés hebdomadaires n'ont pas été fournis ici.
+## Aide de l'IA
 
-## Usage de l'IA
-
-ChatGPT/Codex a aidé à adapter les scénarios, préparer le script de comparaison, reprendre le module MariaDB et ses tests, puis rédiger ce compte rendu. Prompt structurant : « mon travail c'était scenario et sql, met ma partie dans ses dossiers ». La contrainte appliquée est de ne modifier ni le moteur ni l'interface de Kerem. Les sorties ont été vérifiées par exécution et relecture ; les données fictives sont séparées des mesures. Aucun identifiant privé MariaDB n'est publié. Le groupe doit comprendre et relire le code avant de le présenter ; les résultats d'un simulateur simplifié ne doivent pas être présentés comme une preuve de sécurité routière.
+ChatGPT/Codex a aidé à simplifier les fonctions, les JSON et la documentation à la demande de Huy-Ming : « fais les codes niveau BUT2 [...] rend le vraiment simple ». Les résultats ont été vérifiés par exécution. Huy-Ming doit comprendre et pouvoir expliquer chaque fonction. Aucun mot de passe n'est publié et aucune aptitude à la sécurité routière réelle n'est revendiquée.

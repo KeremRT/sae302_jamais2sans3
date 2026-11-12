@@ -1,4 +1,5 @@
--- SAE 3.02 - Base de Huy-Ming. A executer avec un compte d'installation.
+-- Base de Huy-Ming : scenarios -> comparisons -> trials.
+-- Un scenario peut avoir plusieurs comparaisons, chaque comparaison a deux essais.
 -- Aucune suppression de donnees. Ne remplace pas les migrations futures.
 CREATE DATABASE IF NOT EXISTS sae302
     CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
@@ -46,16 +47,4 @@ CREATE TABLE IF NOT EXISTS trials (
         OR (status <> 'TERMINE' AND arrival_s IS NULL AND duration_s IS NULL)),
     CHECK ((status = 'INTERROMPU' AND interruption_reason IS NOT NULL)
         OR (status <> 'INTERROMPU' AND interruption_reason IS NULL))
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS events (
-    event_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
-    trial_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-    event_type VARCHAR(32) NOT NULL,
-    sim_time_s DECIMAL(18,6) NOT NULL,
-    payload_json LONGTEXT NOT NULL CHECK (JSON_VALID(payload_json)),
-    received_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    FOREIGN KEY (trial_id) REFERENCES trials (trial_id),
-    INDEX events_by_trial (trial_id, sim_time_s),
-    CHECK (sim_time_s BETWEEN 0 AND 120)
 ) ENGINE=InnoDB;
