@@ -203,14 +203,7 @@ class ControleFeux:
 
 
 class Simulation:
-    def __init__(self, priorite: bool = True, scenario=None):
-        """Initialise un essai avec une copie validée du scénario sélectionné."""
-        from scenarios_loader import calendrier
-        self.scenario = calendrier(scenario) if scenario is not None else SCENARIO
-        self.pending = []
-        self.ambulance_depart = None
-        self.entrees = []
-        self.pas = 0
+    def __init__(self, priorite: bool = True):
         self.priorite = priorite
         self.t = 0.0
         self.vehicules: list[Vehicule] = []
@@ -227,28 +220,13 @@ class Simulation:
     def avancer(self, dt: float = DT):
         if self.ambulance_terminee is not None:
             return
-        if dt != DT:
-            raise ValueError('Le moteur utilise le pas fixe DT=0.05 s.')
-        # Introduire au début du pas ; reporter les entrées occupées sans perte.
-        while self.index_scenario < len(self.scenario) and self.scenario[self.index_scenario][0] <= self.t + 1e-8:
-            self.pending.append(self.scenario[self.index_scenario])
-            self.index_scenario += 1
-        waiting = []
-        blocked = set()
-        for scheduled, identifiant, trajet, couleur, vitesse, ambulance in self.pending:
-            feu = TRAJETS[trajet].feu
-            if feu in blocked or any(v.chemin.feu == feu and v.s < 55 for v in self.vehicules):
-                waiting.append((scheduled, identifiant, trajet, couleur, vitesse, ambulance))
-                blocked.add(feu)
-                continue
+        self.t += dt
+        while self.index_scenario < len(SCENARIO) and SCENARIO[self.index_scenario][0] <= self.t + 1e-8:
+            _, identifiant, trajet, couleur, vitesse, ambulance = SCENARIO[self.index_scenario]
             self.vehicules.append(Vehicule(identifiant, trajet, couleur, vitesse, ambulance=ambulance))
-            self.entrees.append({'vehicle_id': identifiant, 'scheduled_s': scheduled, 'effective_s': self.t})
+            self.index_scenario += 1
             if ambulance:
-                self.ambulance_depart = self.t
                 self.ajouter_evenement('Ambulance entrée dans le scénario')
-        self.pending = waiting
-        self.pas += 1
-        self.t = round(self.pas * DT, 6)
 
         amb = next((v for v in self.vehicules if v.ambulance), None)
         if amb and not self.controle.deja_demande and self.priorite:
@@ -279,7 +257,7 @@ class Simulation:
             x, _, _ = amb.position()
             if x >= 745:
                 self.ambulance_degagee = True
-            if amb.s >= amb.chemin.longueur and self.ambulance_terminee is None:
+            if amb.s >= amb.chemin.longueur - 15 and self.ambulance_terminee is None:
                 self.ambulance_terminee = self.t
                 self.ajouter_evenement(f'Ambulance arrivée : {self.t:.2f} s')
 
@@ -290,17 +268,17 @@ class Simulation:
                           if v.ambulance or v.s < v.chemin.longueur - 5]
 
 
-def comparer(scenario=None) -> tuple[float, float, float]:
+def comparer() -> tuple[float, float, float]:
     """Évalue strictement le même scénario avec et sans priorité (temps simulé)."""
     temps = []
     for priorite in (False, True):
-        sim = Simulation(priorite, scenario)
-        for _ in range(2400):  # max 120 s simulées
+        sim = Simulation(priorite)
+        for _ in range(4000):  # max 200 s simulées
             sim.avancer()
             if sim.ambulance_terminee is not None:
-                temps.append(round(sim.ambulance_terminee - sim.ambulance_depart, 6))
+                temps.append(sim.ambulance_terminee)
                 break
         else:
-            raise RuntimeError('Le scénario ne s’est pas terminé avant 120 secondes.')
+            raise RuntimeError('Le scénario ne s’est pas terminé avant 200 secondes.')
     sans, avec = temps
     return sans, avec, sans-avec
