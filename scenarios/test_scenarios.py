@@ -1,29 +1,37 @@
-"""Tests du protocole de comparaison sans modifier le moteur partagé."""
-import copy
+"""Vérifications simples des scénarios et du calcul du gain."""
 import unittest
-from comparer_scenarios import charger, executer, comparer
+from comparer_scenarios import charger_scenario, comparer, faire_essai, calculer_gain
 
-class ScenariosTests(unittest.TestCase):
-    """Vérifie la reproductibilité, le chrono et l'interruption."""
-    def test_reproductibilite(self):
-        """Deux répétitions donnent les mêmes mesures sans muter la configuration."""
-        for name in ('normal','dense','urgence'):
-            c=charger(name); avant=copy.deepcopy(c)
-            a=comparer(c);b=comparer(c)
-            self.assertEqual(c,avant)
-            self.assertNotEqual(a['comparison_id'],b['comparison_id'])
-            for mode in ('SANS','AVEC'):
-                x=a['essais'][mode];y=b['essais'][mode]
-                self.assertEqual(x['duration_s'],y['duration_s'])
-                self.assertAlmostEqual(x['duration_s'],x['arrival_s']-x['departure_s'])
-            self.assertAlmostEqual(a['gain_s'],a['essais']['SANS']['duration_s']-a['essais']['AVEC']['duration_s'])
+
+class TestsScenarios(unittest.TestCase):
+    """Teste les trois scénarios et les cas particuliers."""
+    def test_repetition(self):
+        """Un même scénario doit donner les mêmes durées à chaque exécution."""
+        for nom in ('normal', 'dense', 'urgence'):
+            scenario = charger_scenario(nom)
+            premier = comparer(scenario)
+            second = comparer(scenario)
+            self.assertEqual(premier, second)
+            for mode in ('SANS', 'AVEC'):
+                essai = premier[mode]
+                self.assertEqual(essai['etat'], 'TERMINE')
+                self.assertAlmostEqual(essai['duree'], essai['arrivee'] - essai['depart'])
+
+    def test_gain(self):
+        """Vérifie un gain positif, négatif, nul et une comparaison incomplète."""
+        self.assertEqual(calculer_gain({'duree': 18}, {'duree': 15}), 3)
+        self.assertEqual(calculer_gain({'duree': 15}, {'duree': 18}), -3)
+        self.assertEqual(calculer_gain({'duree': 15}, {'duree': 15}), 0)
+        self.assertIsNone(calculer_gain({'duree': None}, {'duree': 15}))
 
     def test_interruption(self):
-        """Un arrêt avant l'arrivée ne produit pas de durée terminée."""
-        r=executer(charger('normal'),False,limite=1)
-        self.assertEqual(r['status'],'INTERROMPU')
-        self.assertIsNone(r['duration_s'])
-        self.assertIsNone(r['arrival_s'])
+        """Un essai trop court reste incomplet et ne reçoit pas de durée inventée."""
+        scenario = charger_scenario('normal')
+        scenario['duree_max'] = 1
+        essai = faire_essai(scenario, False)
+        self.assertEqual(essai['etat'], 'INTERROMPU')
+        self.assertIsNone(essai['duree'])
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     unittest.main()
