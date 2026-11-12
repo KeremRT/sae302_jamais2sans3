@@ -11,9 +11,10 @@ from PySide6.QtCore import Qt, QRectF, QPointF, QSize, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QBrush, QPolygonF
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QFrame, QHBoxLayout, QLabel, QMainWindow,
-    QPushButton, QSlider, QVBoxLayout, QWidget, QSizePolicy
+    QPushButton, QSlider, QComboBox, QVBoxLayout, QWidget, QSizePolicy
 )
 from simulation import Simulation, DT, comparer
+from scenarios_loader import charger_scenario
 
 COULEURS = {
     'fond': '#eaf0e8', 'gazon': '#d4e5cc', 'route': '#34445a',
@@ -236,7 +237,8 @@ class Fenetre(QMainWindow):
         self.setWindowTitle('SAÉ 3.02 — Jamais2sans3 | Carrefour intelligent')
         self.resize(1430,910)
         self.setMinimumSize(1010,670)
-        self.sim=Simulation(priorite=True)
+        self.scenario_config=charger_scenario('S02')
+        self.sim=Simulation(priorite=True, scenario=self.scenario_config)
         self.en_cours=False
         self.speed=1
         self.resultats=None
@@ -264,6 +266,12 @@ class Fenetre(QMainWindow):
         colonne.addWidget(sous)
 
         outils=QHBoxLayout()
+        self.choix_scenario=QComboBox()
+        for sid, label in [('S01','Ambulance seule'), ('S02','Trafic croisé'), ('S03','File devant ambulance')]:
+            self.choix_scenario.addItem(f'{sid} - {label}', sid)
+        self.choix_scenario.setCurrentIndex(1)
+        self.choix_scenario.currentIndexChanged.connect(self.changer_scenario)
+        outils.addWidget(self.choix_scenario)
         self.demarrer=QPushButton('▶  Démarrer')
         self.demarrer.clicked.connect(self.demarrer_sim)
         self.pause=QPushButton('⏸  Pause')
@@ -360,6 +368,11 @@ class Fenetre(QMainWindow):
             QCheckBox {spacing: 8px;}
         ''')
 
+    def changer_scenario(self, index):
+        """Charge un autre scénario et efface les résultats de la sélection précédente."""
+        self.scenario_config=charger_scenario(self.choix_scenario.currentData())
+        self.recommencer()
+
     def changer_priorite(self, actif):
         # Changer le mode recommence le scénario pour conserver des essais comparables.
         self.recommencer()
@@ -383,7 +396,8 @@ class Fenetre(QMainWindow):
     def recommencer(self):
         self.timer.stop()
         self.en_cours=False
-        self.sim=Simulation(self.priorite.isChecked())
+        self.sim=Simulation(self.priorite.isChecked(), self.scenario_config)
+        self.resultats=None
         self.rafraichir()
 
     def tick(self):
@@ -398,7 +412,7 @@ class Fenetre(QMainWindow):
         self.rafraichir()
 
     def comparer_scenarios(self):
-        self.resultats=comparer()
+        self.resultats=comparer(self.scenario_config)
         self.rafraichir()
 
     def rafraichir(self):
@@ -426,6 +440,10 @@ class Fenetre(QMainWindow):
             self.sans.setText(f'Sans priorité : {sans:.2f} s')
             self.avec.setText(f'Avec priorité : {avec:.2f} s')
             self.gain.setText(f'Gain simulé : {gain:+.2f} s')
+        else:
+            self.sans.setText('Sans priorité : —')
+            self.avec.setText('Avec priorité : —')
+            self.gain.setText('Gain : —')
         self.carte.update()
 
 

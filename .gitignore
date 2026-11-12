@@ -1,6 +1,10 @@
-﻿.idea/
+.idea/
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+config*.ini
+!config.example.ini
 .env
+.env.*
 *.log
+resultats_locaux/
