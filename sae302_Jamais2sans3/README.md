@@ -44,17 +44,3 @@ Si tu utilises déjà un dossier de projet avec un environnement `.venv` configu
 Le temps simulé de l'ambulance entre son apparition et son arrivée à la fin du trajet. `DT=0.05 s` est le pas fixe de calcul ; le sélecteur de vitesse agit sur l'affichage, **pas** sur le temps mesuré. Les conditions initiales et les autres véhicules sont les mêmes pour les deux essais ; la seule différence est la coordination des feux.
 
 **Important :** la priorité simulée et les durées de feux sont des hypothèses pédagogiques ; aucune commande de feu de circulation réel n'est prévue.
-
-
-## Partie Huy-Ming : scénarios et base de données
-
-- `scenarios/` : S01 ambulance seule, S02 trafic croisé, S03 file devant ambulance (v2, cinq branches, Ouest vers Est).
-- `scenarios_loader.py` : lecture et validation de ces fichiers ; leur branchement au moteur et à l’interface reste à effectuer.
-- `scenarios_v1/` : configurations initiales conservées pour les tests et la démonstration de la base.
-- `sae_data/` : connexion MariaDB, validation des événements et enregistrement des comparaisons.
-- `sql/` : création des tables et requêtes de lecture.
-- `config.example.ini` : modèle à copier dans `config.ini` et à renseigner localement, sans publier les identifiants.
-- `demo.py` : démonstration avec données artificielles marquées `EXEMPLE`, pas des résultats de simulation.
-- `tests_data/` : tests du stockage et du protocole ; lancer `python -m unittest discover -s tests_data -v`. Les tests MariaDB nécessitent `SAE_TEST_CONFIG` pointant vers une configuration privée pour une base de test distincte.
-
-Installer les dépendances avec `python -m pip install -r requirements.txt`. Pour préparer MariaDB, exécuter `sql/01_schema.sql` avec un compte autorisé, puis configurer un utilisateur applicatif disposant de SELECT, INSERT et UPDATE. L’interface et le moteur de Kerem ne sont pas modifiés par cet ajout ; leur connexion à ces fichiers et au serveur TCP reste à faire.
