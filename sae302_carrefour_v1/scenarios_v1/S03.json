@@ -1,0 +1,116 @@
+{
+  "scenario_id": "S03",
+  "scenario_version": 1,
+  "geometry": {
+    "branches": [
+      "N",
+      "S",
+      "E",
+      "O"
+    ],
+    "incoming_lanes_per_branch": 1,
+    "outgoing_lanes_per_branch": 1,
+    "entry_distance_m": 100,
+    "exit_distance_m": 100,
+    "movements": "straight_only"
+  },
+  "vehicles": {
+    "reference_point": "front",
+    "free_speed_m_s": 10,
+    "acceleration_m_s2": 2,
+    "braking_m_s2": 3,
+    "length_m": 4.5,
+    "standstill_gap_m": 2,
+    "initial_speed_m_s": 0
+  },
+  "lights": {
+    "cycle_s": 50,
+    "phases": [
+      {
+        "axis": "NS",
+        "state": "green",
+        "duration_s": 20
+      },
+      {
+        "axis": "NS",
+        "state": "amber",
+        "duration_s": 3
+      },
+      {
+        "axis": "ALL",
+        "state": "red",
+        "duration_s": 2
+      },
+      {
+        "axis": "EO",
+        "state": "green",
+        "duration_s": 20
+      },
+      {
+        "axis": "EO",
+        "state": "amber",
+        "duration_s": 3
+      },
+      {
+        "axis": "ALL",
+        "state": "red",
+        "duration_s": 2
+      }
+    ]
+  },
+  "priority": {
+    "vehicle_id": "A1",
+    "route": [
+      "S",
+      "N"
+    ],
+    "request": "on_effective_entry",
+    "hold_NS_until_exit": true,
+    "amber_s": 3,
+    "all_red_min_s": 2,
+    "wait_until_crossing_clear": true,
+    "resume_axis": "EO"
+  },
+  "step_s": 0.1,
+  "max_sim_time_s": 120,
+  "initial_vehicles": [],
+  "blocked_entry_policy": "wait_outside_and_log_effective_entry",
+  "arrivals": [
+    {
+      "vehicle_id": "S1",
+      "branch": "S",
+      "scheduled_s": 24,
+      "kind": "ordinary"
+    },
+    {
+      "vehicle_id": "E1",
+      "branch": "E",
+      "scheduled_s": 25,
+      "kind": "ordinary"
+    },
+    {
+      "vehicle_id": "S2",
+      "branch": "S",
+      "scheduled_s": 27,
+      "kind": "ordinary"
+    },
+    {
+      "vehicle_id": "E2",
+      "branch": "E",
+      "scheduled_s": 30,
+      "kind": "ordinary"
+    },
+    {
+      "vehicle_id": "S3",
+      "branch": "S",
+      "scheduled_s": 30,
+      "kind": "ordinary"
+    },
+    {
+      "vehicle_id": "A1",
+      "branch": "S",
+      "scheduled_s": 34,
+      "kind": "emergency"
+    }
+  ]
+}
