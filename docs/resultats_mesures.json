@@ -1,0 +1,1103 @@
+[
+  {
+    "comparison_id": "ab25c868-faca-4a3b-89cb-ff75c0bf6a20",
+    "config": {
+      "geometry": {
+        "branches": [
+          "N",
+          "S",
+          "E",
+          "O",
+          "SO"
+        ],
+        "unit": "pixel",
+        "routes": {
+          "O_E": {
+            "points": [
+              [
+                45,
+                396
+              ],
+              [
+                280,
+                396
+              ],
+              [
+                399,
+                396
+              ],
+              [
+                460,
+                396
+              ],
+              [
+                540,
+                396
+              ],
+              [
+                650,
+                396
+              ],
+              [
+                1020,
+                396
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F4"
+          },
+          "E_O": {
+            "points": [
+              [
+                1005,
+                335
+              ],
+              [
+                715,
+                335
+              ],
+              [
+                625,
+                335
+              ],
+              [
+                545,
+                335
+              ],
+              [
+                420,
+                335
+              ],
+              [
+                38,
+                335
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F2"
+          },
+          "N_S": {
+            "points": [
+              [
+                489,
+                0
+              ],
+              [
+                489,
+                252
+              ],
+              [
+                489,
+                315
+              ],
+              [
+                489,
+                440
+              ],
+              [
+                489,
+                650
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F1"
+          },
+          "S_N": {
+            "points": [
+              [
+                559,
+                660
+              ],
+              [
+                559,
+                491
+              ],
+              [
+                559,
+                425
+              ],
+              [
+                559,
+                320
+              ],
+              [
+                559,
+                0
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F3"
+          },
+          "SO_E": {
+            "points": [
+              [
+                136,
+                670
+              ],
+              [
+                260,
+                572
+              ],
+              [
+                390,
+                475
+              ],
+              [
+                453,
+                426
+              ],
+              [
+                505,
+                400
+              ],
+              [
+                585,
+                396
+              ],
+              [
+                1020,
+                396
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F5"
+          },
+          "O_S": {
+            "points": [
+              [
+                45,
+                396
+              ],
+              [
+                280,
+                396
+              ],
+              [
+                399,
+                396
+              ],
+              [
+                449,
+                408
+              ],
+              [
+                480,
+                443
+              ],
+              [
+                489,
+                512
+              ],
+              [
+                489,
+                655
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F4"
+          },
+          "E_N": {
+            "points": [
+              [
+                1005,
+                335
+              ],
+              [
+                715,
+                335
+              ],
+              [
+                632,
+                335
+              ],
+              [
+                585,
+                319
+              ],
+              [
+                559,
+                265
+              ],
+              [
+                559,
+                0
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F2"
+          }
+        }
+      },
+      "vehicles": {
+        "reference_point": "center",
+        "gap_px": 55,
+        "motion": "constant_speed_without_acceleration"
+      },
+      "lights": {
+        "phases": [
+          [
+            8.0,
+            "NS",
+            "vert"
+          ],
+          [
+            1.5,
+            "NS",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ],
+          [
+            4.5,
+            "SO",
+            "vert"
+          ],
+          [
+            1.0,
+            "SO",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ],
+          [
+            8.0,
+            "EO",
+            "vert"
+          ],
+          [
+            1.5,
+            "EO",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ]
+        ]
+      },
+      "priority": {
+        "vehicle_id": "A1",
+        "route": [
+          "O",
+          "E"
+        ],
+        "request_distance_px": 190,
+        "amber_s": 1.5,
+        "all_red_s": 1.0,
+        "exit_x_px": 745,
+        "controller": "local_pedagogical"
+      },
+      "step_s": 0.05,
+      "max_sim_time_s": 120,
+      "initial_vehicles": [],
+      "blocked_entry_policy": "scheduled_no_entry_queue",
+      "scenario_id": "S02",
+      "scenario_version": 3,
+      "label": "Trafic crois�",
+      "arrivals": [
+        {
+          "vehicle_id": "N1",
+          "branch": "N",
+          "scheduled_s": 0,
+          "kind": "ordinary",
+          "route": "N_S",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "S1",
+          "branch": "S",
+          "scheduled_s": 0,
+          "kind": "ordinary",
+          "route": "S_N",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "N2",
+          "branch": "N",
+          "scheduled_s": 1,
+          "kind": "ordinary",
+          "route": "N_S",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "S2",
+          "branch": "S",
+          "scheduled_s": 1,
+          "kind": "ordinary",
+          "route": "S_N",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "A1",
+          "branch": "O",
+          "scheduled_s": 2,
+          "kind": "emergency",
+          "route": "O_E",
+          "speed_px_s": 74,
+          "initial_s_px": 0
+        }
+      ],
+      "initial_lights": {
+        "F1": "vert",
+        "F2": "rouge",
+        "F3": "vert",
+        "F4": "rouge",
+        "F5": "rouge"
+      },
+      "measurement": "Temps entre debut du pas d apparition et seuil longueur du trajet moins 15 pixels; moteur original Kerem"
+    },
+    "essais": {
+      "SANS": {
+        "status": "TERMINE",
+        "departure_s": 1.95,
+        "arrival_s": 25.4,
+        "duration_s": 23.45,
+        "end_s": 25.4,
+        "trial_id": "2c19bbe1-8eb5-4072-8ac5-9b85625b97df"
+      },
+      "AVEC": {
+        "status": "TERMINE",
+        "departure_s": 1.95,
+        "arrival_s": 15.1,
+        "duration_s": 13.15,
+        "end_s": 15.1,
+        "trial_id": "677b2e59-ac50-4279-8e13-b81d58a9372b"
+      }
+    },
+    "gain_s": 10.3,
+    "moteur_sha256": "9eaab1b0107872a2e7338cfba3bf2cf457fff70c8ea127726188726e3f1f8cf0"
+  },
+  {
+    "comparison_id": "e2ec8b72-26c0-4c0f-b71f-34de945b2849",
+    "config": {
+      "geometry": {
+        "branches": [
+          "N",
+          "S",
+          "E",
+          "O",
+          "SO"
+        ],
+        "unit": "pixel",
+        "routes": {
+          "O_E": {
+            "points": [
+              [
+                45,
+                396
+              ],
+              [
+                280,
+                396
+              ],
+              [
+                399,
+                396
+              ],
+              [
+                460,
+                396
+              ],
+              [
+                540,
+                396
+              ],
+              [
+                650,
+                396
+              ],
+              [
+                1020,
+                396
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F4"
+          },
+          "E_O": {
+            "points": [
+              [
+                1005,
+                335
+              ],
+              [
+                715,
+                335
+              ],
+              [
+                625,
+                335
+              ],
+              [
+                545,
+                335
+              ],
+              [
+                420,
+                335
+              ],
+              [
+                38,
+                335
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F2"
+          },
+          "N_S": {
+            "points": [
+              [
+                489,
+                0
+              ],
+              [
+                489,
+                252
+              ],
+              [
+                489,
+                315
+              ],
+              [
+                489,
+                440
+              ],
+              [
+                489,
+                650
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F1"
+          },
+          "S_N": {
+            "points": [
+              [
+                559,
+                660
+              ],
+              [
+                559,
+                491
+              ],
+              [
+                559,
+                425
+              ],
+              [
+                559,
+                320
+              ],
+              [
+                559,
+                0
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F3"
+          },
+          "SO_E": {
+            "points": [
+              [
+                136,
+                670
+              ],
+              [
+                260,
+                572
+              ],
+              [
+                390,
+                475
+              ],
+              [
+                453,
+                426
+              ],
+              [
+                505,
+                400
+              ],
+              [
+                585,
+                396
+              ],
+              [
+                1020,
+                396
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F5"
+          },
+          "O_S": {
+            "points": [
+              [
+                45,
+                396
+              ],
+              [
+                280,
+                396
+              ],
+              [
+                399,
+                396
+              ],
+              [
+                449,
+                408
+              ],
+              [
+                480,
+                443
+              ],
+              [
+                489,
+                512
+              ],
+              [
+                489,
+                655
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F4"
+          },
+          "E_N": {
+            "points": [
+              [
+                1005,
+                335
+              ],
+              [
+                715,
+                335
+              ],
+              [
+                632,
+                335
+              ],
+              [
+                585,
+                319
+              ],
+              [
+                559,
+                265
+              ],
+              [
+                559,
+                0
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F2"
+          }
+        }
+      },
+      "vehicles": {
+        "reference_point": "center",
+        "gap_px": 55,
+        "motion": "constant_speed_without_acceleration"
+      },
+      "lights": {
+        "phases": [
+          [
+            8.0,
+            "NS",
+            "vert"
+          ],
+          [
+            1.5,
+            "NS",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ],
+          [
+            4.5,
+            "SO",
+            "vert"
+          ],
+          [
+            1.0,
+            "SO",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ],
+          [
+            8.0,
+            "EO",
+            "vert"
+          ],
+          [
+            1.5,
+            "EO",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ]
+        ]
+      },
+      "priority": {
+        "vehicle_id": "A1",
+        "route": [
+          "O",
+          "E"
+        ],
+        "request_distance_px": 190,
+        "amber_s": 1.5,
+        "all_red_s": 1.0,
+        "exit_x_px": 745,
+        "controller": "local_pedagogical"
+      },
+      "step_s": 0.05,
+      "max_sim_time_s": 120,
+      "initial_vehicles": [],
+      "blocked_entry_policy": "scheduled_no_entry_queue",
+      "scenario_id": "S03",
+      "scenario_version": 3,
+      "label": "File devant ambulance",
+      "arrivals": [
+        {
+          "vehicle_id": "O1",
+          "branch": "O",
+          "scheduled_s": 0,
+          "kind": "ordinary",
+          "route": "O_E",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "O2",
+          "branch": "O",
+          "scheduled_s": 1,
+          "kind": "ordinary",
+          "route": "O_E",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "O3",
+          "branch": "O",
+          "scheduled_s": 2,
+          "kind": "ordinary",
+          "route": "O_E",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "A1",
+          "branch": "O",
+          "scheduled_s": 5,
+          "kind": "emergency",
+          "route": "O_E",
+          "speed_px_s": 74,
+          "initial_s_px": 0
+        },
+        {
+          "vehicle_id": "N1",
+          "branch": "N",
+          "scheduled_s": 0,
+          "kind": "ordinary",
+          "route": "N_S",
+          "speed_px_s": 61,
+          "initial_s_px": 0
+        }
+      ],
+      "initial_lights": {
+        "F1": "vert",
+        "F2": "rouge",
+        "F3": "vert",
+        "F4": "rouge",
+        "F5": "rouge"
+      },
+      "measurement": "Temps entre debut du pas d apparition et seuil longueur du trajet moins 15 pixels; moteur original Kerem"
+    },
+    "essais": {
+      "SANS": {
+        "status": "TERMINE",
+        "departure_s": 4.95,
+        "arrival_s": 29.75,
+        "duration_s": 24.8,
+        "end_s": 29.75,
+        "trial_id": "8df74703-b521-4875-add1-eaa92a798921"
+      },
+      "AVEC": {
+        "status": "TERMINE",
+        "departure_s": 4.95,
+        "arrival_s": 22.45,
+        "duration_s": 17.5,
+        "end_s": 22.45,
+        "trial_id": "65e2d60b-454d-4d93-9d46-48582adddb2e"
+      }
+    },
+    "gain_s": 7.3,
+    "moteur_sha256": "9eaab1b0107872a2e7338cfba3bf2cf457fff70c8ea127726188726e3f1f8cf0"
+  },
+  {
+    "comparison_id": "c3e6e22d-7e2c-4445-a636-d0d74f78d963",
+    "config": {
+      "geometry": {
+        "branches": [
+          "N",
+          "S",
+          "E",
+          "O",
+          "SO"
+        ],
+        "unit": "pixel",
+        "routes": {
+          "O_E": {
+            "points": [
+              [
+                45,
+                396
+              ],
+              [
+                280,
+                396
+              ],
+              [
+                399,
+                396
+              ],
+              [
+                460,
+                396
+              ],
+              [
+                540,
+                396
+              ],
+              [
+                650,
+                396
+              ],
+              [
+                1020,
+                396
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F4"
+          },
+          "E_O": {
+            "points": [
+              [
+                1005,
+                335
+              ],
+              [
+                715,
+                335
+              ],
+              [
+                625,
+                335
+              ],
+              [
+                545,
+                335
+              ],
+              [
+                420,
+                335
+              ],
+              [
+                38,
+                335
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F2"
+          },
+          "N_S": {
+            "points": [
+              [
+                489,
+                0
+              ],
+              [
+                489,
+                252
+              ],
+              [
+                489,
+                315
+              ],
+              [
+                489,
+                440
+              ],
+              [
+                489,
+                650
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F1"
+          },
+          "S_N": {
+            "points": [
+              [
+                559,
+                660
+              ],
+              [
+                559,
+                491
+              ],
+              [
+                559,
+                425
+              ],
+              [
+                559,
+                320
+              ],
+              [
+                559,
+                0
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F3"
+          },
+          "SO_E": {
+            "points": [
+              [
+                136,
+                670
+              ],
+              [
+                260,
+                572
+              ],
+              [
+                390,
+                475
+              ],
+              [
+                453,
+                426
+              ],
+              [
+                505,
+                400
+              ],
+              [
+                585,
+                396
+              ],
+              [
+                1020,
+                396
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F5"
+          },
+          "O_S": {
+            "points": [
+              [
+                45,
+                396
+              ],
+              [
+                280,
+                396
+              ],
+              [
+                399,
+                396
+              ],
+              [
+                449,
+                408
+              ],
+              [
+                480,
+                443
+              ],
+              [
+                489,
+                512
+              ],
+              [
+                489,
+                655
+              ]
+            ],
+            "stop_index": 2,
+            "light": "F4"
+          },
+          "E_N": {
+            "points": [
+              [
+                1005,
+                335
+              ],
+              [
+                715,
+                335
+              ],
+              [
+                632,
+                335
+              ],
+              [
+                585,
+                319
+              ],
+              [
+                559,
+                265
+              ],
+              [
+                559,
+                0
+              ]
+            ],
+            "stop_index": 1,
+            "light": "F2"
+          }
+        }
+      },
+      "vehicles": {
+        "reference_point": "center",
+        "gap_px": 55,
+        "motion": "constant_speed_without_acceleration"
+      },
+      "lights": {
+        "phases": [
+          [
+            8.0,
+            "NS",
+            "vert"
+          ],
+          [
+            1.5,
+            "NS",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ],
+          [
+            4.5,
+            "SO",
+            "vert"
+          ],
+          [
+            1.0,
+            "SO",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ],
+          [
+            8.0,
+            "EO",
+            "vert"
+          ],
+          [
+            1.5,
+            "EO",
+            "orange"
+          ],
+          [
+            1.0,
+            "AUCUN",
+            "rouge"
+          ]
+        ]
+      },
+      "priority": {
+        "vehicle_id": "A1",
+        "route": [
+          "O",
+          "E"
+        ],
+        "request_distance_px": 190,
+        "amber_s": 1.5,
+        "all_red_s": 1.0,
+        "exit_x_px": 745,
+        "controller": "local_pedagogical"
+      },
+      "step_s": 0.05,
+      "max_sim_time_s": 120,
+      "initial_vehicles": [],
+      "blocked_entry_policy": "scheduled_no_entry_queue",
+      "scenario_id": "S01",
+      "scenario_version": 3,
+      "label": "Ambulance seule",
+      "arrivals": [
+        {
+          "vehicle_id": "A1",
+          "branch": "O",
+          "scheduled_s": 5,
+          "kind": "emergency",
+          "route": "O_E",
+          "speed_px_s": 74,
+          "initial_s_px": 0
+        }
+      ],
+      "initial_lights": {
+        "F1": "vert",
+        "F2": "rouge",
+        "F3": "vert",
+        "F4": "rouge",
+        "F5": "rouge"
+      },
+      "measurement": "Temps entre debut du pas d apparition et seuil longueur du trajet moins 15 pixels; moteur original Kerem"
+    },
+    "essais": {
+      "SANS": {
+        "status": "TERMINE",
+        "departure_s": 4.95,
+        "arrival_s": 25.4,
+        "duration_s": 20.45,
+        "end_s": 25.4,
+        "trial_id": "22496f46-980a-4e4d-9759-8c3f15ee253b"
+      },
+      "AVEC": {
+        "status": "TERMINE",
+        "departure_s": 4.95,
+        "arrival_s": 18.1,
+        "duration_s": 13.15,
+        "end_s": 18.1,
+        "trial_id": "880d65de-3264-4f68-b44b-fe64a4a76a51"
+      }
+    },
+    "gain_s": 7.3,
+    "moteur_sha256": "9eaab1b0107872a2e7338cfba3bf2cf457fff70c8ea127726188726e3f1f8cf0"
+  }
+]
