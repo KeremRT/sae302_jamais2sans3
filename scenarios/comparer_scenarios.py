@@ -1,4 +1,3 @@
-"""Charge un scénario et compare les deux modes avec le moteur de Kerem."""
 import argparse
 import json
 import sys
@@ -11,14 +10,14 @@ import simulation
 
 
 def charger_scenario(nom):
-    """Lit les véhicules et les paramètres dans le fichier JSON."""
+
     fichier = DOSSIER / 'scenarios' / f'scenario_{nom}.json'
     with open(fichier, encoding='utf-8') as fichier_json:
         return json.load(fichier_json)
 
 
 def faire_essai(scenario, priorite):
-    """Lance un essai et renvoie le départ, l'arrivée et la durée simulée."""
+
     if not 0 < scenario['duree_max'] <= 120:
         raise ValueError('La durée maximale doit être comprise entre 0 et 120 secondes.')
     calendrier = []
@@ -33,7 +32,7 @@ def faire_essai(scenario, priorite):
     if sum(v['ambulance'] for v in scenario['vehicules']) != 1:
         raise ValueError('Il faut exactement une ambulance.')
 
-    # Le moteur lit une constante SCENARIO. On la remplace en mémoire seulement.
+
     ancien_scenario = simulation.SCENARIO
     simulation.SCENARIO = tuple(sorted(calendrier, key=lambda v: v[0]))
     try:
@@ -45,7 +44,7 @@ def faire_essai(scenario, priorite):
             temps_avant = round(essai.t, 6)
             essai.avancer()
             if depart is None and any(v.ambulance for v in essai.vehicules):
-                # Le véhicule parcourt déjà un pas au moment de son apparition.
+
                 depart = temps_avant
             if essai.ambulance_terminee is not None:
                 arrivee = round(essai.ambulance_terminee, 6)
@@ -57,14 +56,14 @@ def faire_essai(scenario, priorite):
 
 
 def calculer_gain(sans, avec):
-    """Calcule sans moins avec, ou None si un des essais est incomplet."""
+
     if sans['duree'] is None or avec['duree'] is None:
         return None
     return round(sans['duree'] - avec['duree'], 6)
 
 
 def comparer(scenario):
-    """Exécute le même calendrier deux fois ; seule la priorité change."""
+
     sans = faire_essai(scenario, False)
     avec = faire_essai(scenario, True)
     return {'scenario': scenario, 'SANS': sans, 'AVEC': avec,
@@ -72,7 +71,7 @@ def comparer(scenario):
 
 
 def main():
-    """Affiche les résultats et enregistre dans MariaDB si --config est fourni."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--scenario', choices=['normal', 'dense', 'urgence', 'tous'], default='tous')
     parser.add_argument('--config', help='Fichier INI privé pour MariaDB')
@@ -87,7 +86,7 @@ def main():
             try:
                 identifiant = enregistrer(connexion, resultat)
                 resultat['id_comparaison'] = identifiant
-                # Vérifier que les durées sauvegardées correspondent aux mesures.
+
                 lignes = lire_resultats(connexion, identifiant)
                 for ligne in lignes:
                     duree = ligne['duration_s']

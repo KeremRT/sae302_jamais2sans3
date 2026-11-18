@@ -1,6 +1,3 @@
--- Base de Huy-Ming : scenarios -> comparisons -> trials.
--- Un scenario peut avoir plusieurs comparaisons, chaque comparaison a deux essais.
--- Aucune suppression de donnees. Ne remplace pas les migrations futures.
 CREATE DATABASE IF NOT EXISTS sae302
     CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 USE sae302;

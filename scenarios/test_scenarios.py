@@ -1,12 +1,11 @@
-"""Vérifications simples des scénarios et du calcul du gain."""
 import unittest
 from comparer_scenarios import charger_scenario, comparer, faire_essai, calculer_gain
 
 
 class TestsScenarios(unittest.TestCase):
-    """Teste les trois scénarios et les cas particuliers."""
+
     def test_repetition(self):
-        """Un même scénario doit donner les mêmes durées à chaque exécution."""
+
         for nom in ('normal', 'dense', 'urgence'):
             scenario = charger_scenario(nom)
             premier = comparer(scenario)
@@ -18,14 +17,14 @@ class TestsScenarios(unittest.TestCase):
                 self.assertAlmostEqual(essai['duree'], essai['arrivee'] - essai['depart'])
 
     def test_gain(self):
-        """Vérifie un gain positif, négatif, nul et une comparaison incomplète."""
+
         self.assertEqual(calculer_gain({'duree': 18}, {'duree': 15}), 3)
         self.assertEqual(calculer_gain({'duree': 15}, {'duree': 18}), -3)
         self.assertEqual(calculer_gain({'duree': 15}, {'duree': 15}), 0)
         self.assertIsNone(calculer_gain({'duree': None}, {'duree': 15}))
 
     def test_interruption(self):
-        """Un essai trop court reste incomplet et ne reçoit pas de durée inventée."""
+
         scenario = charger_scenario('normal')
         scenario['duree_max'] = 1
         essai = faire_essai(scenario, False)

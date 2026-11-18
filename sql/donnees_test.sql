@@ -1,6 +1,3 @@
--- Valeurs FICTIVES pour vérifier les tables : 18 s sans, 15 s avec.
--- Sélectionner une base de test avant d'exécuter ce fichier.
--- Si une commande échoue : ROLLBACK ; ne pas poursuivre au COMMIT.
 SET @config = '{"nom":"Exemple fictif"}';
 SET @comparaison = UUID();
 START TRANSACTION;

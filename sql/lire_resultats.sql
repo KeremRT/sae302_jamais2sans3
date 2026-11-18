@@ -1,7 +1,5 @@
--- Afficher les essais enregistrés.
 SELECT comparison_id, mode, status, duration_s FROM trials;
 
--- Comparer les deux durées. NULL signifie que la comparaison est incomplète.
 SELECT sans.comparison_id,
        sans.duration_s AS temps_sans,
        avec.duration_s AS temps_avec,

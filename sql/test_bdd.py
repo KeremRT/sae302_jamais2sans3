@@ -1,4 +1,3 @@
-"""Vérifications MariaDB sur une base de test, avec des données EXEMPLE."""
 import argparse
 import copy
 import sys
@@ -9,7 +8,7 @@ from base_donnees import connecter, enregistrer, lire_resultats
 
 
 def tester(fichier):
-    """Teste la relecture, un gain négatif, un essai incomplet et le rollback."""
+
     connexion = connecter(fichier)
     try:
         with connexion.cursor() as curseur:
@@ -18,7 +17,7 @@ def tester(fichier):
             if 'test' not in nom_base and 'validation' not in nom_base:
                 raise ValueError('Utiliser une base dont le nom contient test ou validation.')
         resultat = comparer(charger_scenario('normal'))
-        # Inverser les durées pour vérifier que la base conserve aussi les pertes.
+
         resultat['SANS'], resultat['AVEC'] = resultat['AVEC'], resultat['SANS']
         identifiant = enregistrer(connexion, resultat, 'EXEMPLE')
         lignes = lire_resultats(connexion, identifiant)

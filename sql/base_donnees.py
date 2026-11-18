@@ -1,4 +1,3 @@
-"""Trois fonctions pour connecter, sauvegarder et lire les résultats MariaDB."""
 import configparser
 import hashlib
 import json
@@ -7,7 +6,7 @@ import pymysql
 
 
 def connecter(fichier_config):
-    """Ouvre MariaDB avec les identifiants d'un fichier privé."""
+
     config = configparser.ConfigParser(interpolation=None)
     if not config.read(fichier_config, encoding='utf-8'):
         raise ValueError('Fichier de configuration introuvable.')
@@ -19,14 +18,14 @@ def connecter(fichier_config):
 
 
 def enregistrer(connexion, resultat, origine='SIMULATION'):
-    """Sauvegarde le scénario et ses deux essais dans une seule transaction."""
+
     if origine not in ('SIMULATION', 'EXEMPLE'):
         raise ValueError('Origine inconnue.')
     scenario = resultat['scenario']
     texte = json.dumps(scenario, ensure_ascii=False, sort_keys=True)
-    # L'empreinte sert à reconnaître une modification du scénario.
+
     empreinte = hashlib.sha256(texte.encode('utf-8')).hexdigest()
-    identifiant = str(uuid4())  # Un identifiant différent pour chaque comparaison.
+    identifiant = str(uuid4())
     try:
         connexion.begin()
         with connexion.cursor() as curseur:
@@ -51,15 +50,15 @@ def enregistrer(connexion, resultat, origine='SIMULATION'):
                                  essai['arrivee'], essai['duree'],
                                  essai['arrivee'] if termine else scenario['duree_max'],
                                  None if termine else 'timeout'))
-        connexion.commit()  # Les deux essais sont enregistrés ensemble.
+        connexion.commit()
         return identifiant
     except Exception:
-        connexion.rollback()  # En cas d'erreur, aucune moitié de comparaison.
+        connexion.rollback()
         raise
 
 
 def lire_resultats(connexion, identifiant):
-    """Retrouve les deux essais à partir de l'identifiant de comparaison."""
+
     with connexion.cursor() as curseur:
         curseur.execute('SELECT mode,status,duration_s FROM trials WHERE comparison_id=%s ORDER BY mode',
                         (identifiant,))
