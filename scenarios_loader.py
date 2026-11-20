@@ -1,5 +1,3 @@
-"""Chargement des scénarios version 2 adaptés au moteur cinq branches."""
-
 import copy
 import json
 import math
@@ -8,13 +6,15 @@ from pathlib import Path
 from sae_data.validation import valider_config
 
 
+# On rassemble les réglages du moteur pour les comparer à ceux du scénario.
 def modele_courant():
-    """Décrit les paramètres effectifs afin de détecter une configuration périmée."""
     from simulation import TRAJETS, ControleFeux
 
+    # Pour chaque trajet, on garde ses points, son point d'arrêt et son feu.
     routes = {}
     for nom, trajet in TRAJETS.items():
         points = []
+        # On convertit chaque couple de coordonnées en liste, comme dans le JSON.
         for point in trajet.points:
             points.append(list(point))
         routes[nom] = {
@@ -23,6 +23,7 @@ def modele_courant():
             'light': trajet.feu,
         }
 
+    # On recopie les phases des feux dans l'ordre du cycle.
     phases = []
     for phase in ControleFeux.CYCLE:
         phases.append(list(phase))
@@ -43,9 +44,10 @@ def modele_courant():
     }
 
 
+# On vérifie le scénario puis on prépare les arrivées pour la simulation.
 def calendrier(config):
-    """Valide les paramètres et convertit les arrivées sans modifier l'original."""
     from simulation import TRAJETS
+    # On travaille sur une copie et on vérifie les réglages du carrefour.
     config = copy.deepcopy(config)
     valider_config(config)
     if config['scenario_version'] != 2:
@@ -53,6 +55,7 @@ def calendrier(config):
     for key, value in modele_courant().items():
         if config.get(key) != value:
             raise ValueError(f'Paramètre incompatible avec le moteur : {key}')
+    # Pour chaque véhicule, on vérifie que le trajet, la branche et la vitesse vont ensemble.
     rows = []
     for event in config['arrivals']:
         route = event.get('route')
@@ -61,10 +64,12 @@ def calendrier(config):
             raise ValueError('Trajet ou branche incompatible.')
         if type(speed) not in (int, float) or not math.isfinite(speed) or not 0 < speed <= 100:
             raise ValueError('Vitesse attendue dans ]0,100] pixels/s.')
+        # L'heure d'arrivée doit tomber sur un pas de 0,05 seconde.
         nombre_pas = event['scheduled_s'] / 0.05
         ecart = abs(nombre_pas - round(nombre_pas))
         if ecart > 0.0000001:
             raise ValueError('Arrivée non alignée sur le pas fixe.')
+        # On reconnaît l'ambulance avec A1 pour choisir sa couleur et vérifier son trajet.
         ambulance = event['vehicle_id'] == 'A1'
         if ambulance:
             type_attendu = 'emergency'
@@ -79,13 +84,13 @@ def calendrier(config):
         rows.append((event['scheduled_s'], event['vehicle_id'], route,
                      couleur, speed, ambulance))
 
-    # Le premier élément de chaque arrivée est son horaire.
+    # On trie les véhicules par heure d'arrivée avant de renvoyer le calendrier.
     rows.sort(key=heure_arrivee)
     return tuple(rows)
 
 
+# On lit le JSON choisi et on le vérifie avant de renvoyer sa configuration.
 def charger_scenario(identifiant):
-    """Charge S01, S02 ou S03 depuis les fichiers JSON versionnés."""
     if identifiant not in ('S01', 'S02', 'S03'):
         raise ValueError('Scénario inconnu.')
     path = Path(__file__).parent / 'scenarios' / f'{identifiant}.json'
@@ -94,6 +99,6 @@ def charger_scenario(identifiant):
     return config
 
 
+# Le tri utilise le premier élément de chaque arrivée, qui contient l'heure.
 def heure_arrivee(arrivee):
-    """Renvoie l'horaire utilisé pour trier les arrivées du calendrier."""
     return arrivee[0]

@@ -1,9 +1,9 @@
--- SAE 3.02 - Base de Huy-Ming. A executer avec un compte d'installation.
--- Aucune suppression de donnees. Ne remplace pas les migrations futures.
+-- On cree la base sae302 si elle manque.
 CREATE DATABASE IF NOT EXISTS sae302
     CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 USE sae302;
 
+-- On garde les reglages de chaque scenario et sa version.
 CREATE TABLE IF NOT EXISTS scenarios (
     scenario_id VARCHAR(8) NOT NULL,
     scenario_version INT NOT NULL,
@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS scenarios (
     CHECK (scenario_version > 0)
 ) ENGINE=InnoDB;
 
+-- On associe les deux modes aux memes reglages.
 CREATE TABLE IF NOT EXISTS comparisons (
     comparison_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
     scenario_id VARCHAR(8) NOT NULL,
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS comparisons (
         REFERENCES scenarios (scenario_id, scenario_version)
 ) ENGINE=InnoDB;
 
+-- On garde un essai par mode avec son etat et sa duree.
 CREATE TABLE IF NOT EXISTS trials (
     trial_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
     comparison_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS trials (
         OR (status <> 'INTERROMPU' AND interruption_reason IS NULL))
 ) ENGINE=InnoDB;
 
+-- On garde les messages recus pour chaque essai.
 CREATE TABLE IF NOT EXISTS events (
     event_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
     trial_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,

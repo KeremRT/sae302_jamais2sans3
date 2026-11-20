@@ -1,15 +1,13 @@
-"""Lit la configuration et ouvre une connexion MariaDB par opération."""
-
 import configparser
 import os
 from pathlib import Path
 
 
+# On garde au même endroit les réglages pour se connecter à MariaDB.
 class ConnexionMariaDB:
-    """Conserve les paramètres de connexion dans les attributs de l'objet."""
 
+    # On lit le fichier de réglages et on récupère le mot de passe.
     def __init__(self, config_path='config.ini'):
-        """Lit le fichier INI et vérifie qu'un mot de passe est renseigné."""
         config = configparser.ConfigParser(interpolation=None)
         fichiers_lus = config.read(Path(config_path), encoding='utf-8')
         if not fichiers_lus:
@@ -22,7 +20,7 @@ class ConnexionMariaDB:
         self.__database = db.get('database', 'sae302')
         self.__ca = db.get('ssl_ca', '').strip()
 
-        # La variable d'environnement est prioritaire sur le fichier INI.
+        # On prend le mot de passe de l’environnement en priorité.
         if 'SAE_DB_PASSWORD' in os.environ:
             self.__password = os.environ['SAE_DB_PASSWORD']
         else:
@@ -30,11 +28,11 @@ class ConnexionMariaDB:
         if not self.__password or self.__password == 'A_REMPLACER':
             raise ValueError('Renseigner le mot de passe dans config.ini ou SAE_DB_PASSWORD.')
 
+    # On ouvre une connexion avec les réglages déjà lus.
     def connecter(self):
-        """Ouvre une nouvelle connexion avec les paramètres mémorisés."""
         import pymysql
 
-        # Si un certificat est fourni, on conserve les vérifications TLS.
+        # Si un certificat est fourni, on vérifie le certificat et l’identité du serveur.
         if self.__ca:
             return pymysql.connect(
                 host=self.__host,
@@ -68,8 +66,7 @@ class ConnexionMariaDB:
         )
 
 
+# On renvoie la méthode que le programme pourra appeler pour ouvrir une connexion.
 def creer_factory(config_path='config.ini'):
-    """Renvoie la méthode de connexion attendue par les autres fichiers."""
-    # Ce nom est conservé pour les appels du serveur et du repository.
     configuration = ConnexionMariaDB(config_path)
     return configuration.connecter

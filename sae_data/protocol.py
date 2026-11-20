@@ -1,12 +1,10 @@
-"""Decoupage des lignes TCP, optionnel pour le serveur de Youssef."""
-
 import json
 
 from .validation import DonneesInvalides
 
 
+# On refuse les clés qui apparaissent deux fois dans le même objet JSON.
 def _unique_keys(pairs):
-    """Construit un dictionnaire JSON en refusant les clés dupliquées."""
     result = {}
     for key, value in pairs:
         if key in result:
@@ -15,28 +13,26 @@ def _unique_keys(pairs):
     return result
 
 
+# On refuse les valeurs comme NaN ou l’infini.
 def _reject_constant(value):
-    """Refuse les constantes JSON non finies telles que NaN."""
     raise DonneesInvalides(f'Constante JSON interdite : {value}.')
 
 
+# On garde les morceaux reçus jusqu’à obtenir un message complet.
 class LecteurJSONL:
-    """Une instance par connexion. En cas d'erreur, fermer cette connexion.
-
-    feed est un generateur : traiter les messages dans l'ordre ; un message
-    valide precedant une ligne invalide reste disponible pour traitement.
-    """
     MAX_LINE = 16384
 
+    # On commence avec un tampon vide pour cette connexion.
     def __init__(self):
-        """Initialise le tampon qui conserve les fragments de messages TCP."""
         self._buffer = bytearray()
 
+    # On ajoute les octets reçus et on lit chaque ligne JSON complète.
     def feed(self, data):
-        """Reconstitue les lignes JSON reçues par fragments et produit les messages complets."""
         if not isinstance(data, bytes):
             raise DonneesInvalides('Le lecteur attend des octets TCP.')
+        # On ajoute les nouveaux octets à ceux qui restent du dernier appel.
         self._buffer.extend(data)
+        # Chaque retour à la ligne marque la fin d’un message.
         while b'\n' in self._buffer:
             raw, _, rest = self._buffer.partition(b'\n')
             self._buffer = bytearray(rest)
@@ -49,11 +45,12 @@ class LecteurJSONL:
                 raise DonneesInvalides('Ligne JSON invalide.') from exc
             if not isinstance(obj, dict):
                 raise DonneesInvalides('Objet JSON attendu.')
+            # On donne ce message à l’appelant avant de passer au suivant.
             yield obj
         if len(self._buffer) > self.MAX_LINE:
             raise DonneesInvalides('Ligne trop longue sans terminateur LF.')
 
+    # À la déconnexion, on vérifie qu’il ne reste pas de message coupé.
     def finish(self):
-        """Vérifie qu’aucun message incomplet ne reste à la déconnexion."""
         if self._buffer:
             raise DonneesInvalides('Connexion fermee au milieu d un message JSON.')

@@ -1,9 +1,3 @@
-"""Persistance MariaDB, transactions atomiques et calcul des mesures.
-
-Le serveur fournit les UUID. Chaque appel ouvre sa propre connexion. Les
-acquittements reseau ne doivent etre envoyes qu'apres le retour sans erreur.
-"""
-
 from decimal import Decimal
 import hashlib
 import logging
@@ -14,33 +8,33 @@ from .validation import (DonneesInvalides, uuid4_valide, valider_evenement,
 LOG = logging.getLogger(__name__)
 
 
+# Cette erreur sert à signaler un problème de stockage.
 class ErreurStockage(RuntimeError):
-    """Erreur SQL ou connexion : aucune confirmation de sauvegarde possible."""
+    pass
 
 
+# On regroupe ici les opérations qui lisent et enregistrent les essais.
 class MesuresRepository:
-    """Enregistre les essais et événements dans MariaDB avec des transactions."""
+    # On garde la fonction qui ouvre une connexion à la base.
     def __init__(self, connection_factory):
-        """Mémorise la fonction qui ouvre les connexions au stockage."""
         self._connect = connection_factory
 
+    # Si une opération échoue, on essaie d’annuler les écritures en attente.
     def _annuler(self, conn, erreur):
-        """Annule les écritures si possible, puis signale l'erreur à l'appelant."""
         if conn is not None:
             try:
                 conn.rollback()
             except Exception:
                 LOG.error('Rollback non confirme apres une erreur de connexion.')
 
-        # Une erreur de données reste différente d'une panne MariaDB.
         if isinstance(erreur, DonneesInvalides):
             raise erreur
         raise ErreurStockage(
             'Sauvegarde/lecture non confirmee ; verifier la connexion.'
         ) from erreur
 
+    # On ferme le curseur puis la connexion s’ils ont été ouverts.
     def _fermer(self, conn, cur):
-        """Ferme le curseur et la connexion, même après une erreur."""
         if cur is not None:
             try:
                 cur.close()
@@ -52,32 +46,31 @@ class MesuresRepository:
             except Exception:
                 LOG.warning('Fermeture de connexion non confirmee.')
 
+    # On enregistre les réglages communs aux essais avec et sans priorité.
     def creer_comparaison(self, config, comparison_id, data_origin='SIMULATION'):
-        """Fige le scenario et cree la paire ; idempotent avec le meme contenu."""
         uuid4_valide(comparison_id, 'comparison_id')
         if data_origin not in ('SIMULATION', 'EXEMPLE'):
             raise DonneesInvalides('Origine de donnees inconnue.')
         configuration_json = valider_config(config)
-        # Même empreinte qu'avant : seule l'écriture du calcul est décomposée.
+        # On calcule une empreinte pour reconnaître les réglages du scénario.
         contenu = configuration_json.encode('utf-8')
         calcul = hashlib.sha256(contenu)
         empreinte = calcul.hexdigest()
         identifiant_scenario = config['scenario_id']
         version = config['scenario_version']
-        # 1. Ouvrir la connexion et commencer la transaction.
         conn = None
         cur = None
         try:
             conn = self._connect()
             conn.begin()
             cur = conn.cursor()
-            # Verrouille le scenario avant la comparaison, toujours dans cet ordre.
             requete = (
                 'SELECT config_json FROM scenarios WHERE scenario_id=%s AND '
                 'scenario_version=%s FOR UPDATE'
             )
             valeurs = (identifiant_scenario, version)
             cur.execute(requete, valeurs)
+            # On vérifie que cette version du scénario correspond aux réglages déjà enregistrés.
             scenario = cur.fetchone()
             if scenario:
                 if scenario['config_json'] != configuration_json:
@@ -99,6 +92,7 @@ class MesuresRepository:
             )
             valeurs = (comparison_id,)
             cur.execute(requete, valeurs)
+            # On regarde si cet identifiant a déjà été enregistré.
             enregistrement_existant = cur.fetchone()
             if enregistrement_existant:
                 if enregistrement_existant['config_json'] != configuration_json:
@@ -120,25 +114,21 @@ class MesuresRepository:
                     data_origin,
                 )
                 cur.execute(requete, valeurs)
-            # 2. Valider seulement si toutes les requêtes ont réussi.
             conn.commit()
         except Exception as erreur:
-            # En cas d'échec, annuler les écritures non validées.
             self._annuler(conn, erreur)
         finally:
-            # 3. Fermer les ressources, avec ou sans erreur.
             self._fermer(conn, cur)
         return {'comparison_id': comparison_id, 'scenario_id': identifiant_scenario,
                 'scenario_version': version, 'config_sha256': empreinte,
                 'data_origin': data_origin}
 
+    # On prépare un essai pour le mode choisi et on le marque PRET.
     def ouvrir_essai(self, comparison_id, mode, trial_id):
-        """Cree un essai PRET avant le message trial_started."""
         uuid4_valide(comparison_id, 'comparison_id')
         uuid4_valide(trial_id, 'trial_id')
         if mode not in ('SANS', 'AVEC'):
             raise DonneesInvalides('Mode inconnu.')
-        # 1. Ouvrir la connexion et commencer la transaction.
         conn = None
         cur = None
         try:
@@ -183,31 +173,26 @@ class MesuresRepository:
                     'PRET',
                 )
                 cur.execute(requete, valeurs)
-            # 2. Valider seulement si toutes les requêtes ont réussi.
             conn.commit()
         except Exception as erreur:
-            # En cas d'échec, annuler les écritures non validées.
             self._annuler(conn, erreur)
         finally:
-            # 3. Fermer les ressources, avec ou sans erreur.
             self._fermer(conn, cur)
         return {'trial_id': trial_id, 'comparison_id': comparison_id,
                 'scenario_id': comp['scenario_id'], 'scenario_version': comp['scenario_version'],
                 'mode': mode}
 
+    # On range l’événement dans le bon essai et on met à jour son état.
     def traiter_evenement(self, message):
-        """Valide, enregistre l'evenement et met a jour l'essai atomiquement."""
         event, t, payload = valider_evenement(message)
         trial_id = event['trial_id']
         duplicate = False
-        # 1. Ouvrir la connexion et commencer la transaction.
         conn = None
         cur = None
         try:
             conn = self._connect()
             conn.begin()
             cur = conn.cursor()
-            # Serialise les ecritures du meme essai, y compris les retransmissions.
             requete = (
                 'SELECT * FROM trials WHERE trial_id=%s FOR UPDATE'
             )
@@ -225,6 +210,7 @@ class MesuresRepository:
             valeurs_attendues = {'comparison_id': comp['comparison_id'],
                         'scenario_id': comp['scenario_id'],
                         'scenario_version': comp['scenario_version'], 'mode': trial['mode']}
+            # On vérifie que le message correspond au scénario et au mode de cet essai.
             for champ in valeurs_attendues:
                 if event[champ] != valeurs_attendues[champ]:
                     raise DonneesInvalides(
@@ -235,12 +221,14 @@ class MesuresRepository:
             )
             valeurs = (event['event_id'],)
             cur.execute(requete, valeurs)
+            # On regarde si cet identifiant a déjà été enregistré.
             enregistrement_existant = cur.fetchone()
             if enregistrement_existant:
                 if enregistrement_existant['payload_json'] != payload:
                     raise DonneesInvalides('event_id reutilise avec un contenu different.')
                 duplicate = True
             else:
+                # On prépare le nouvel état avant d’écrire le message et l’essai ensemble.
                 self._appliquer_transition(trial, event, t)
                 requete = (
                     'INSERT INTO events (event_id,trial_id,event_type,sim_time_s,payload_json) '
@@ -268,20 +256,17 @@ class MesuresRepository:
                     trial_id,
                 )
                 cur.execute(requete, valeurs)
-            # 2. Valider seulement si toutes les requêtes ont réussi.
             conn.commit()
         except Exception as erreur:
-            # En cas d'échec, annuler les écritures non validées.
             self._annuler(conn, erreur)
         finally:
-            # 3. Fermer les ressources, avec ou sans erreur.
             self._fermer(conn, cur)
         return {'event_id': event['event_id'], 'trial_id': trial_id,
                 'duplicate': duplicate, 'status': trial['status']}
 
+    # On vérifie l’ordre des événements et on calcule la durée à l’arrivée.
     @staticmethod
     def _appliquer_transition(trial, event, t):
-        """Vérifie un événement et applique la transition correspondante à l’essai."""
         type_evenement = event['type']
         etat = trial['status']
         dernier_temps = Decimal(str(trial['last_sim_time_s']))
@@ -311,14 +296,12 @@ class MesuresRepository:
             trial['duration_s'] = t - departure
             trial['status'] = 'TERMINE'
         elif type_evenement == 'trial_interrupted':
-            # Une panne avant trial_started peut interrompre un essai PRET.
             trial['status'] = 'INTERROMPU'
             trial['interruption_reason'] = event['reason']
 
+    # On récupère les deux essais pour calculer le gain de temps.
     def lire_comparaison(self, comparison_id):
-        """Une lecture transactionnelle renvoie des Decimal, sans arrondi d'affichage."""
         uuid4_valide(comparison_id, 'comparison_id')
-        # 1. Ouvrir la connexion et commencer la transaction.
         conn = None
         cur = None
         try:
@@ -339,14 +322,12 @@ class MesuresRepository:
             valeurs = (comparison_id,)
             cur.execute(requete, valeurs)
             trials = cur.fetchall()
-            # 2. Valider seulement si toutes les requêtes ont réussi.
             conn.commit()
         except Exception as erreur:
-            # En cas d'échec, annuler les écritures non validées.
             self._annuler(conn, erreur)
         finally:
-            # 3. Fermer les ressources, avec ou sans erreur.
             self._fermer(conn, cur)
+        # On range les essais par mode pour retrouver facilement les deux durées.
         essais_par_mode = {}
         for essai in trials:
             mode = essai['mode']
@@ -356,6 +337,7 @@ class MesuresRepository:
         avec = essais_par_mode.get('AVEC')
         comparable = False
         gain = None
+        # On calcule le gain seulement si les deux essais sont terminés.
         if sans is not None and avec is not None:
             if sans['status'] == 'TERMINE' and avec['status'] == 'TERMINE':
                 comparable = True

@@ -1,16 +1,15 @@
-"""Validation du protocole version 1. Aucune dependance externe."""
-
 import json
 from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
 
+# Cette erreur indique qu’un message ou un scénario contient une donnée incorrecte.
 class DonneesInvalides(ValueError):
-    """Erreur de format ou de coherence metier ; message non enregistre."""
+    pass
 
 
+# On vérifie le format de l’identifiant.
 def uuid4_valide(value, champ):
-    """Vérifie qu’une valeur est un UUID version 4 sous sa forme canonique."""
     if not isinstance(value, str):
         raise DonneesInvalides(f'{champ} doit etre une chaine UUID v4.')
     try:
@@ -24,8 +23,8 @@ def uuid4_valide(value, champ):
     return value
 
 
+# On écrit le JSON toujours de la même façon pour pouvoir le comparer.
 def json_canonique(value):
-    """Sérialise les données de manière stable pour comparer leurs configurations."""
     try:
         return json.dumps(value, ensure_ascii=False, sort_keys=True,
                           separators=(',', ':'), allow_nan=False)
@@ -33,9 +32,9 @@ def json_canonique(value):
         raise DonneesInvalides('Donnees non serialisables en JSON valide.') from exc
 
 
+# On vérifie que le temps est compris entre 0 et 120 secondes et assez précis pour la base.
 def temps_valide(value):
-    # bool est un sous-type de int en Python : le rejeter explicitement.
-    """Vérifie un temps simulé entre zéro et 120 secondes avec six décimales au plus."""
+    # On exige un nombre et on écarte les booléens comme True.
     if type(value) not in (int, float, Decimal):
         raise DonneesInvalides('sim_time_s doit etre un nombre, pas une chaine.')
     try:
@@ -55,11 +54,11 @@ def temps_valide(value):
     return temps
 
 
+# On vérifie les champs du message avant de l’enregistrer.
 def valider_evenement(message):
-    """Valide les champs d’un événement et renvoie ses données normalisées."""
-    # 1. Vérifier la forme générale du message et les champs présents.
     if not isinstance(message, dict):
         raise DonneesInvalides('Un evenement doit etre un objet JSON.')
+    # On prépare la liste des champs que le message doit contenir.
     champs_obligatoires = [
         'protocol_version', 'event_id', 'type', 'comparison_id', 'trial_id',
         'scenario_id', 'scenario_version', 'mode', 'sim_time_s',
@@ -74,7 +73,6 @@ def valider_evenement(message):
     for champ in message:
         if champ not in champs_autorises:
             raise DonneesInvalides('Champs obligatoires absents ou champs inconnus.')
-    # 2. Vérifier les versions et les identifiants.
     if type(message['protocol_version']) is not int:
         raise DonneesInvalides('Version de protocole non prise en charge.')
     if message['protocol_version'] != 1:
@@ -83,7 +81,7 @@ def valider_evenement(message):
         raise DonneesInvalides('Version de scenario invalide.')
     if message['scenario_version'] < 1:
         raise DonneesInvalides('Version de scenario invalide.')
-    # Ces identifiants empêchent de mélanger les comparaisons et les essais.
+    # On contrôle les trois identifiants qui relient le message à son essai.
     for champ in ('event_id', 'trial_id', 'comparison_id'):
         uuid4_valide(message[champ], champ)
     if not isinstance(message['scenario_id'], str):
@@ -94,7 +92,7 @@ def valider_evenement(message):
         raise DonneesInvalides('Mode attendu : AVEC ou SANS.')
     if message['mode'] not in ('AVEC', 'SANS'):
         raise DonneesInvalides('Mode attendu : AVEC ou SANS.')
-    # 3. Vérifier les règles propres au départ, à l'arrivée et à l'interruption.
+    # On vérifie les règles propres au type d’événement reçu.
     type_evenement = message['type']
     if not isinstance(type_evenement, str):
         raise DonneesInvalides('Type d evenement inconnu.')
@@ -112,7 +110,7 @@ def valider_evenement(message):
             raise DonneesInvalides('Motif d interruption invalide.')
     elif 'reason' in message:
         raise DonneesInvalides('reason est reserve aux interruptions.')
-    # 4. Vérifier l'heure simulée et préparer les données pour le stockage.
+    # On contrôle le temps simulé avant de préparer le message pour la base.
     temps = temps_valide(message['sim_time_s'])
     if type_evenement == 'trial_started':
         if temps != 0:
@@ -131,8 +129,8 @@ def valider_evenement(message):
     return normalise, temps, json_message
 
 
+# On contrôle les réglages du scénario et la liste des véhicules.
 def valider_config(config):
-    """Vérifie la configuration du scénario et renvoie sa représentation JSON stable."""
     if not isinstance(config, dict):
         raise DonneesInvalides('La configuration doit etre un objet.')
     if config.get('scenario_id') not in ('S01', 'S02', 'S03'):
@@ -149,6 +147,7 @@ def valider_config(config):
         raise DonneesInvalides('Cette version du module attend une limite de 120 s.')
     if not isinstance(config['arrivals'], list):
         raise DonneesInvalides('arrivals doit etre une liste.')
+    # On garde les identifiants déjà vus pour repérer les doublons.
     identifiants = []
     for arrivee in config['arrivals']:
         if not isinstance(arrivee, dict):
