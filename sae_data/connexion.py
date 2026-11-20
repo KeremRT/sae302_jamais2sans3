@@ -1,6 +1,5 @@
 import configparser
 import os
-from pathlib import Path
 
 
 # On garde au même endroit les réglages pour se connecter à MariaDB.
@@ -8,9 +7,9 @@ class ConnexionMariaDB:
 
     # On lit le fichier de réglages et on récupère le mot de passe.
     def __init__(self, config_path='config.ini'):
+        # On lit les valeurs telles qu'elles sont écrites, même si le mot de passe contient un %.
         config = configparser.ConfigParser(interpolation=None)
-        fichiers_lus = config.read(Path(config_path), encoding='utf-8')
-        if not fichiers_lus:
+        if not config.read(config_path, encoding='utf-8'):
             raise ValueError('Configuration absente : copier config.example.ini vers config.ini.')
 
         db = config['database']
@@ -18,7 +17,6 @@ class ConnexionMariaDB:
         self.__port = db.getint('port', 3306)
         self.__user = db['user']
         self.__database = db.get('database', 'sae302')
-        self.__ca = db.get('ssl_ca', '').strip()
 
         # On prend le mot de passe de l’environnement en priorité.
         if 'SAE_DB_PASSWORD' in os.environ:
@@ -32,25 +30,7 @@ class ConnexionMariaDB:
     def connecter(self):
         import pymysql
 
-        # Si un certificat est fourni, on vérifie le certificat et l’identité du serveur.
-        if self.__ca:
-            return pymysql.connect(
-                host=self.__host,
-                port=self.__port,
-                user=self.__user,
-                password=self.__password,
-                database=self.__database,
-                charset='utf8mb4',
-                cursorclass=pymysql.cursors.DictCursor,
-                autocommit=False,
-                connect_timeout=5,
-                read_timeout=10,
-                write_timeout=10,
-                ssl_ca=self.__ca,
-                ssl_verify_cert=True,
-                ssl_verify_identity=True,
-            )
-
+        # DictCursor permet de lire une colonne par son nom, par exemple essai['status'].
         return pymysql.connect(
             host=self.__host,
             port=self.__port,
