@@ -1,185 +1,203 @@
-﻿# SAÉ 3.02 — Carrefour intelligent
+# SAÉ 3.02 — Carrefour intelligent — Jamais2sans3
 
-## Présentation du projet
+Application pédagogique de BUT Réseaux et Télécommunications : simulation d'un carrefour à cinq branches, priorité à une ambulance, communication TCP/JSON et stockage MariaDB. Aucun équipement routier réel n'est commandé.
 
-Projet réalisé dans le cadre du BUT 2 Réseaux et Télécommunications à l'IUT de Colmar, Université de Haute-Alsace.
+## Équipe
 
-**Nom du groupe : Jamais2sans3**
-
-Ce projet consiste à développer une simulation informatique d'un carrefour intelligent permettant d'étudier la circulation des véhicules et le passage d'un véhicule prioritaire.
-
-Notre application représente un carrefour schématique à cinq branches, inspiré d'une intersection de Colmar.
-
-L'objectif est de comparer le temps de passage d'une ambulance dans deux situations :
-- Sans système de priorité.
-- Avec un système de priorité simulé.
-
-Le projet constitue un prototype pédagogique et ne commande pas de véritables équipements routiers.
-
-## Membres du groupe
-
-| Membre | Contribution principale |
+| Membre | Partie principale |
 |---|---|
-| Kerem Karaaslan | Interface graphique, moteur de simulation et tests |
-| Youssef [NOM À COMPLÉTER] | Serveur, communication TCP et gestion des priorités |
-| Huy-Ming [NOM À COMPLÉTER] | Scénarios de circulation, base de données MariaDB et tests |
+| Kerem Karaaslan | Interface graphique et moteur de simulation |
+| Youssef Allag | Serveur TCP, client réseau et stratégie de priorité |
+| Huy-Ming Banchongphanith | Scénarios, base MariaDB et résultats |
 
-## Technologies utilisées
+Le groupe comprend trois étudiants. Le nom du groupe est **Jamais2sans3**.
 
-- Python : langage principal du projet.
-- PySide6 : développement de l'interface graphique.
-- TCP / JSON : technologies utilisées pour la partie communication réseau.
-- MariaDB : stockage des données et des résultats.
-- PyMySQL : communication entre Python et MariaDB.
-- Git et GitHub : gestion des versions et collaboration.
+## Version et prérequis
 
-## Fonctionnalités de la simulation
+Ces instructions concernent le projet regroupé : `main.py`, `serveur_central.py`, ce README et `requirements.txt` sont dans le même dossier. Pour le rendu GitHub, publier le **contenu** de ce dossier à la racine du dépôt. Les anciennes versions placées dans des sous-dossiers sur d'autres branches ne suivent pas cette organisation.
 
-La partie graphique du projet comprend :
+Prévoir Git et Python 3.12 ou 3.13 sur Windows 11. Le serveur utilise Debian 13, Python 3 et MariaDB. La fenêtre graphique s'exécute sur Windows. Les deux machines doivent communiquer sur le port TCP 5000 ; adapter l'adresse du serveur à votre réseau.
 
-- Un carrefour schématique à cinq branches.
-- Cinq feux de circulation (F1 à F5).
-- Une simulation du déplacement des véhicules.
-- La circulation d'une ambulance.
-- Une gestion des phases des feux.
-- Un mode avec et sans priorité simulée.
-- Une comparaison des temps de passage.
-- Les boutons Démarrer, Pause et Recommencer.
-- Des tests automatisés du moteur de simulation.
+Dépendances Python : PySide6 pour l'interface et PyMySQL pour MariaDB. Elles sont listées dans `requirements.txt`.
 
-Les modules serveur, scénarios et MariaDB sont également présents dans le dépôt. Leur intégration complète avec l'interface doit être validée par des tests avant d'être considérée comme fonctionnelle.
+## 1. Récupérer le projet
 
-## Prérequis
+Une fois la version regroupée publiée à la racine du dépôt, exécuter sur chaque machine :
 
-Pour utiliser l'application sous Windows :
-
-- Windows 10 ou Windows 11.
-- Python 3.12.
-- Git.
-- Une connexion Internet pour installer les dépendances.
-
-MariaDB est nécessaire uniquement pour les fonctionnalités utilisant la base de données.
-
-## Installation du projet
-
-### 1. Cloner le dépôt GitHub
-
-Ouvrir PowerShell et exécuter :
-
-```powershell
+```bash
 git clone https://github.com/KeremRT/sae302_jamais2sans3.git
 cd sae302_jamais2sans3
 ```
 
-### 2. Créer un environnement virtuel Python
+Si vous utilisez le ZIP regroupé avant publication, le décompresser et ouvrir un terminal dans `Projet_SAE302`, le dossier contenant `requirements.txt`. La suite est identique. Ne pas mélanger des fichiers provenant de plusieurs branches.
+
+## 2. Installer sur Windows
+
+Dans PowerShell, depuis le dossier du projet :
 
 ```powershell
-py -3.12 -m venv .venv
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-### 3. Installer les dépendances
-
-Depuis la racine du projet :
+Si PowerShell bloque l'activation, utiliser directement l'interpréteur de l'environnement, sans changer la politique de sécurité :
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Cette commande installe les bibliothèques nécessaires à l'interface et au module SQL.
+Dans ce cas, remplacer `python` par `.\.venv\Scripts\python.exe` dans les commandes Windows suivantes.
 
-## Démarrer l'application
+## 3. Installer le serveur Debian
 
-Depuis la racine du dépôt :
+```bash
+sudo apt update
+sudo apt install -y git python3 python3-venv mariadb-server
+sudo systemctl enable --now mariadb
+python3 -m venv .venv-debian
+source .venv-debian/bin/activate
+python -m pip install PyMySQL==1.1.2
+```
+
+PySide6 n'est pas nécessaire au serveur sans interface. Pour installer toutes les dépendances du projet dans cet environnement, utiliser `python -m pip install -r requirements.txt`. Ne pas copier l'environnement virtuel de Windows vers Debian.
+
+## 4. Préparer MariaDB
+
+Sur Debian, depuis le dossier du projet :
+
+```bash
+sudo mariadb < sql/01_schema.sql
+sudo mariadb
+```
+
+Dans le client MariaDB, créer un compte applicatif en remplaçant le mot de passe :
+
+```sql
+CREATE USER IF NOT EXISTS 'sae_huyming'@'127.0.0.1'
+IDENTIFIED BY 'REMPLACER_PAR_UN_MOT_DE_PASSE_PRIVE';
+GRANT SELECT, INSERT, UPDATE ON sae302.* TO 'sae_huyming'@'127.0.0.1';
+EXIT;
+```
+
+Si le compte existe déjà, conserver son mot de passe actuel : `CREATE USER IF NOT EXISTS` ne le remplace pas. Le schéma crée les tables sans effacer les données, mais ne migre pas une ancienne structure incompatible.
+
+Placer la configuration hors du dépôt :
+
+```bash
+cp config.example.ini "$HOME/sae302-prive.ini"
+chmod 600 "$HOME/sae302-prive.ini"
+nano "$HOME/sae302-prive.ini"
+```
+
+Renseigner les valeurs correspondant à votre installation :
+
+```ini
+[database]
+host = 127.0.0.1
+port = 3306
+database = sae302
+user = sae_huyming
+password = VOTRE_MOT_DE_PASSE_PRIVE
+ssl_ca =
+```
+
+Ne jamais publier le fichier privé, les mots de passe, les environnements virtuels ou une copie de la base.
+
+## 5. Lancer et utiliser l'application
+
+### Mode réseau avec MariaDB
+
+Sur Debian, avec l'environnement activé :
+
+```bash
+python serveur_central.py --host 0.0.0.0 --port 5000 --config "$HOME/sae302-prive.ini"
+```
+
+Sur Windows, remplacer l'adresse d'exemple par celle de Debian :
 
 ```powershell
-.\.venv\Scripts\python.exe .\sae302_Jamais2sans3\main.py
+python interface_reseau.py --host 192.168.56.101 --port 5000
 ```
 
-Une fenêtre graphique s'ouvre et affiche le carrefour.
+1. Choisir S01, S02 ou S03 dans la liste.
+2. Cliquer sur **Démarrer réseau** ou **Comparer via serveur TCP**.
+3. L'application exécute SANS puis AVEC priorité sur le même scénario.
+4. Le serveur décide des transitions des feux et sauvegarde les événements dans MariaDB.
+5. La fenêtre affiche les durées et le gain relus dans la base.
 
-## Guide d'utilisation
+Le bouton **Arrêter essai** demande une interruption ; il ne s'agit pas d'une pause reprenable. Un essai incomplet ne donne pas de gain comparable. Le gain est `durée SANS − durée AVEC` ; une valeur négative représente une perte de temps.
 
-1. Lancer l'application.
-2. Observer les différentes entrées du carrefour.
-3. Choisir le fonctionnement avec ou sans priorité ambulance.
-4. Cliquer sur Démarrer pour lancer la simulation.
-5. Observer le déplacement des véhicules et les changements des feux.
-6. Cliquer sur Pause pour suspendre la simulation.
-7. Utiliser Recommencer pour relancer le scénario.
-8. Comparer les temps de passage simulés.
-
-## Exécuter les tests
-
-Pour lancer les tests du moteur de simulation :
+Pour réaliser les comparaisons réseau sans fenêtre :
 
 ```powershell
-.\.venv\Scripts\python.exe .\sae302_Jamais2sans3\test_simulation.py
+python client_reseau.py --host 192.168.56.101 --port 5000 --scenario tous
 ```
 
-Les tests vérifient notamment :
-- Les cinq entrées du carrefour.
-- La compatibilité des états des feux.
-- La reproductibilité des comparaisons.
-- L'espacement des véhicules dans les scénarios testés.
-- Le comportement de l'ambulance au feu rouge.
+### Mode local sans réseau
 
-## Structure du dépôt
-
-```text
-sae302_jamais2sans3/
-|
-|-- README.md
-|-- requirements.txt
-|-- Bilan_Projet.pdf
-|-- IAGraphie.pdf
-|
-|-- sae302_Jamais2sans3/
-|   |-- main.py
-|   |-- simulation.py
-|   |-- test_simulation.py
-|   |-- requirements.txt
-|
-|-- serveur/
-|-- scenarios/
-|-- sql/
-|-- docs/
+```powershell
+python main.py
 ```
 
-Les fichiers Bilan_Projet.pdf et IAGraphie.pdf correspondent aux documents de remise à ajouter lors de la finalisation du projet.
+Choisir un scénario, utiliser Démarrer/Pause/Recommencer et **Comparer le même scénario**. Ce mode utilise le contrôleur local et ne sauvegarde pas automatiquement dans MariaDB. Les temps peuvent différer du mode réseau, dont les transitions sont décidées par le serveur.
 
-## Partie serveur et communication
+| Scénario | Situation |
+|---|---|
+| S01 | Ambulance seule |
+| S02 | Trafic croisé |
+| S03 | File de véhicules devant l'ambulance |
 
-Le dossier serveur/ regroupe le travail consacré aux communications réseau et à la gestion centralisée des priorités.
+## Organisation
 
-Le fonctionnement de ce module doit être vérifié séparément, puis avec la simulation graphique.
+| Fichiers | Rôle |
+|---|---|
+| `main.py`, `simulation.py` | Interface locale et moteur partagé |
+| `interface_reseau.py`, `client_reseau.py` | Interface réseau et échanges côté Windows |
+| `serveur_central.py`, `priorite_simple.py` | Serveur Debian et décisions de priorité |
+| `scenarios/`, `scenarios_loader.py` | Trois scénarios et validation de leur configuration |
+| `sae_data/` | Connexion, validation, protocole JSON et stockage transactionnel |
+| `sql/01_schema.sql`, `sql/02_lire_resultats.sql` | Création des tables et consultation des résultats |
+| `executer_scenarios.py` | Comparaisons locales en ligne de commande, avec sauvegarde facultative |
+| `demo.py` | Données fictives EXEMPLE, également utilisées par certains tests |
+| `test_*.py`, `tests_data/` | Vérifications du moteur, des données et du réseau |
 
-## Partie base de données
+## Tests et limites des vérifications
 
-Le dossier sql/ regroupe les scripts et les modules permettant de gérer les données du projet.
+Depuis la racine, avec l'environnement Python activé :
 
-Les scénarios de circulation sont présents dans le dossier scenarios/.
+```bash
+python -m unittest discover -v
+python -m unittest discover -s tests_data -v
+```
 
-Les instructions complémentaires sont disponibles dans docs/installation_bdd.md.
+Les tests automatiques TCP utilisent une base SQLite temporaire. Les trois tests de concurrence MariaDB sont ignorés sans configuration dédiée. Ces tests locaux ne remplacent pas une démonstration complète entre Windows, Debian et MariaDB.
 
-Ne jamais publier de véritables identifiants ou mots de passe MariaDB dans le dépôt.
+Pour vérifier MariaDB, préparer une **base distincte de `sae302`** avec les mêmes tables : dans une copie de `sql/01_schema.sql`, adapter CREATE DATABASE et USE au nom de la base de test. Donner les droits nécessaires à un compte de test et créer son fichier INI privé. Sur Debian :
 
-## Documentation du projet
+```bash
+export SAE_TEST_CONFIG="$HOME/sae302-test-prive.ini"
+python -m unittest discover -s tests_data -v
+unset SAE_TEST_CONFIG
+```
 
-Le dépôt comprend également des documents d'analyse :
+Sous PowerShell, utiliser `$env:SAE_TEST_CONFIG = "$HOME/sae302-test-prive.ini"`, puis `Remove-Item Env:SAE_TEST_CONFIG` après les tests. Les tests ajoutent des données EXEMPLE ; ils ne doivent pas utiliser la base du rendu.
 
-- Bilan_Projet.pdf : bilan fonctionnel, difficultés, organisation et comparaison du planning.
-- IAGraphie.pdf : utilisation des intelligences artificielles génératives durant le projet.
+Pour vérifier manuellement les erreurs TCP, serveur déjà démarré :
 
-## Limites du système
+```powershell
+python test_erreurs_tcp.py --host 192.168.56.101 --port 5000
+```
 
-Le projet est une simulation pédagogique.
+En cas d'échec de connexion, vérifier l'adresse, le port, le lancement du serveur et les règles du pare-feu. En cas de refus SQL, vérifier le compte MariaDB et le fichier INI côté Debian.
 
-L'interface applique actuellement une logique locale de gestion des feux. La présence des modules serveur et SQL ne garantit pas leur interconnexion complète.
+Le serveur traite une connexion cliente à la fois. Le modèle routier est simplifié. Les fichiers de scénario et le moteur doivent provenir de la même version sur les deux machines : le client actuel ne compare pas automatiquement son JSON avec celui du serveur.
 
-Le prototype ne doit pas être utilisé pour commander des feux réels. Une utilisation sur voie publique nécessiterait des dispositifs de sécurité, des validations réglementaires et des tests supplémentaires.
+## Documents du rendu
 
-## Conclusion
+- [Bilan_Projet.pdf](Bilan_Projet.pdf) : bilan fonctionnel, technique et organisationnel existant.
+- [IAGraphie.pdf](IAGraphie.pdf) : déclaration existante de l'utilisation de l'IA.
+- [GUIDE_YOUSSEF.md](GUIDE_YOUSSEF.md) : compléments de configuration des VM ; pour les chemins et l'installation de cette version regroupée, suivre d'abord ce README.
+- `docs/historique/` : documents des étapes précédentes, dont certaines instructions et mesures concernent d'autres versions.
 
-Ce projet nous permet de mettre en pratique les compétences acquises en programmation Python, simulation, réseaux, bases de données et travail collaboratif.
-
-Il illustre comment un système informatique pourrait contribuer à améliorer la circulation d'un véhicule prioritaire, dans les limites d'un environnement de simulation.
+Les PDF sont conservés sans modification dans cette mise à jour documentaire. Leur actualisation et l'ajout du comparatif entre planning prévu et temps réel restent à effectuer avant le rendu final.
