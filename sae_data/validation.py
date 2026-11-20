@@ -14,10 +14,12 @@ def uuid4_valide(value, champ):
     if not isinstance(value, str):
         raise DonneesInvalides(f'{champ} doit etre une chaine UUID v4.')
     try:
-        parsed = UUID(value)
+        identifiant_lu = UUID(value)
     except (ValueError, AttributeError) as exc:
         raise DonneesInvalides(f'{champ} invalide.') from exc
-    if parsed.version != 4 or str(parsed) != value:
+    if identifiant_lu.version != 4:
+        raise DonneesInvalides(f'{champ} doit etre un UUID v4 canonique en minuscules.')
+    if str(identifiant_lu) != value:
         raise DonneesInvalides(f'{champ} doit etre un UUID v4 canonique en minuscules.')
     return value
 
@@ -37,59 +39,96 @@ def temps_valide(value):
     if type(value) not in (int, float, Decimal):
         raise DonneesInvalides('sim_time_s doit etre un nombre, pas une chaine.')
     try:
-        t = Decimal(str(value))
-        if not t.is_finite() or t < 0 or t > 120:
+        temps = Decimal(str(value))
+        if not temps.is_finite():
             raise DonneesInvalides('sim_time_s doit etre fini et compris entre 0 et 120 s.')
-        if t != t.quantize(Decimal('0.000001')):
+        if temps < 0:
+            raise DonneesInvalides('sim_time_s doit etre fini et compris entre 0 et 120 s.')
+        if temps > 120:
+            raise DonneesInvalides('sim_time_s doit etre fini et compris entre 0 et 120 s.')
+        precision = Decimal('0.000001')
+        temps_six_decimales = temps.quantize(precision)
+        if temps != temps_six_decimales:
             raise DonneesInvalides('Precision maximale : six decimales, sans arrondi implicite.')
     except InvalidOperation as exc:
         raise DonneesInvalides('Temps invalide.') from exc
-    return t
+    return temps
 
 
 def valider_evenement(message):
     """Valide les champs d’un événement et renvoie ses données normalisées."""
+    # 1. Vérifier la forme générale du message et les champs présents.
     if not isinstance(message, dict):
         raise DonneesInvalides('Un evenement doit etre un objet JSON.')
-    required = {'protocol_version', 'event_id', 'type', 'comparison_id', 'trial_id',
-                'scenario_id', 'scenario_version', 'mode', 'sim_time_s'}
-    if not required.issubset(message) or set(message) - required - {'vehicle_id', 'reason'}:
-        raise DonneesInvalides('Champs obligatoires absents ou champs inconnus.')
-    if type(message['protocol_version']) is not int or message['protocol_version'] != 1:
+    champs_obligatoires = [
+        'protocol_version', 'event_id', 'type', 'comparison_id', 'trial_id',
+        'scenario_id', 'scenario_version', 'mode', 'sim_time_s',
+    ]
+    champs_facultatifs = ['vehicle_id', 'reason']
+
+    for champ in champs_obligatoires:
+        if champ not in message:
+            raise DonneesInvalides('Champs obligatoires absents ou champs inconnus.')
+
+    champs_autorises = champs_obligatoires + champs_facultatifs
+    for champ in message:
+        if champ not in champs_autorises:
+            raise DonneesInvalides('Champs obligatoires absents ou champs inconnus.')
+    # 2. Vérifier les versions et les identifiants.
+    if type(message['protocol_version']) is not int:
         raise DonneesInvalides('Version de protocole non prise en charge.')
-    if type(message['scenario_version']) is not int or message['scenario_version'] < 1:
+    if message['protocol_version'] != 1:
+        raise DonneesInvalides('Version de protocole non prise en charge.')
+    if type(message['scenario_version']) is not int:
+        raise DonneesInvalides('Version de scenario invalide.')
+    if message['scenario_version'] < 1:
         raise DonneesInvalides('Version de scenario invalide.')
     # Ces identifiants empêchent de mélanger les comparaisons et les essais.
-    for key in ('event_id', 'trial_id', 'comparison_id'):
-        uuid4_valide(message[key], key)
-    if not isinstance(message['scenario_id'], str) or message['scenario_id'] not in ('S01', 'S02', 'S03'):
+    for champ in ('event_id', 'trial_id', 'comparison_id'):
+        uuid4_valide(message[champ], champ)
+    if not isinstance(message['scenario_id'], str):
         raise DonneesInvalides('Scenario inconnu.')
-    if not isinstance(message['mode'], str) or message['mode'] not in ('AVEC', 'SANS'):
+    if message['scenario_id'] not in ('S01', 'S02', 'S03'):
+        raise DonneesInvalides('Scenario inconnu.')
+    if not isinstance(message['mode'], str):
         raise DonneesInvalides('Mode attendu : AVEC ou SANS.')
-    kind = message['type']
-    if not isinstance(kind, str) or kind not in (
-            'trial_started', 'priority_departed', 'priority_arrived', 'trial_interrupted'):
+    if message['mode'] not in ('AVEC', 'SANS'):
+        raise DonneesInvalides('Mode attendu : AVEC ou SANS.')
+    # 3. Vérifier les règles propres au départ, à l'arrivée et à l'interruption.
+    type_evenement = message['type']
+    if not isinstance(type_evenement, str):
         raise DonneesInvalides('Type d evenement inconnu.')
-    if kind in ('priority_departed', 'priority_arrived'):
-        if message.get('vehicle_id') != 'A1' or 'reason' in message:
+    if type_evenement not in ('trial_started', 'priority_departed', 'priority_arrived', 'trial_interrupted'):
+        raise DonneesInvalides('Type d evenement inconnu.')
+    if type_evenement in ('priority_departed', 'priority_arrived'):
+        if message.get('vehicle_id') != 'A1':
+            raise DonneesInvalides('Depart/arrivee : vehicle_id=A1 requis, reason interdit.')
+        if 'reason' in message:
             raise DonneesInvalides('Depart/arrivee : vehicle_id=A1 requis, reason interdit.')
     elif 'vehicle_id' in message:
         raise DonneesInvalides('vehicle_id est reserve aux evenements de A1.')
-    if kind == 'trial_interrupted':
+    if type_evenement == 'trial_interrupted':
         if message.get('reason') not in ('user_stop', 'timeout', 'connection_lost'):
             raise DonneesInvalides('Motif d interruption invalide.')
     elif 'reason' in message:
         raise DonneesInvalides('reason est reserve aux interruptions.')
-    t = temps_valide(message['sim_time_s'])
-    if kind == 'trial_started' and t != 0:
-        raise DonneesInvalides('Le lancement doit etre a t=0.')
-    if kind == 'trial_interrupted' and message['reason'] == 'timeout' and t != 120:
-        raise DonneesInvalides('Le timeout du scenario doit etre a t=120 s.')
-    normalise = dict(message, sim_time_s=float(t))
-    canonical = json_canonique(normalise)
-    if len(canonical.encode('utf-8')) > 16384:
+    # 4. Vérifier l'heure simulée et préparer les données pour le stockage.
+    temps = temps_valide(message['sim_time_s'])
+    if type_evenement == 'trial_started':
+        if temps != 0:
+            raise DonneesInvalides('Le lancement doit etre a t=0.')
+    if type_evenement == 'trial_interrupted':
+        if message['reason'] == 'timeout':
+            if temps != 120:
+                raise DonneesInvalides('Le timeout du scenario doit etre a t=120 s.')
+    normalise = message.copy()
+    normalise['sim_time_s'] = float(temps)
+    json_message = json_canonique(normalise)
+    message_octets = json_message.encode('utf-8')
+    taille_message = len(message_octets)
+    if taille_message > 16384:
         raise DonneesInvalides('Message trop volumineux.')
-    return normalise, t, canonical
+    return normalise, temps, json_message
 
 
 def valider_config(config):
@@ -98,24 +137,30 @@ def valider_config(config):
         raise DonneesInvalides('La configuration doit etre un objet.')
     if config.get('scenario_id') not in ('S01', 'S02', 'S03'):
         raise DonneesInvalides('Scenario inconnu.')
-    v = config.get('scenario_version')
-    if type(v) is not int or v < 1:
+    version = config.get('scenario_version')
+    if type(version) is not int:
         raise DonneesInvalides('Version de scenario invalide.')
-    for key in ('geometry', 'vehicles', 'lights', 'priority', 'arrivals'):
-        if key not in config:
-            raise DonneesInvalides(f'Configuration incomplete : {key}.')
+    if version < 1:
+        raise DonneesInvalides('Version de scenario invalide.')
+    for champ in ('geometry', 'vehicles', 'lights', 'priority', 'arrivals'):
+        if champ not in config:
+            raise DonneesInvalides(f'Configuration incomplete : {champ}.')
     if config.get('max_sim_time_s') != 120:
         raise DonneesInvalides('Cette version du module attend une limite de 120 s.')
     if not isinstance(config['arrivals'], list):
         raise DonneesInvalides('arrivals doit etre une liste.')
-    ids = set()
-    for item in config['arrivals']:
-        if not isinstance(item, dict) or not isinstance(item.get('vehicle_id'), str):
+    identifiants = []
+    for arrivee in config['arrivals']:
+        if not isinstance(arrivee, dict):
             raise DonneesInvalides('Arrivee invalide.')
-        if item['vehicle_id'] in ids or item.get('branch') not in ('N', 'S', 'E', 'O'):
+        if not isinstance(arrivee.get('vehicle_id'), str):
+            raise DonneesInvalides('Arrivee invalide.')
+        if arrivee['vehicle_id'] in identifiants:
             raise DonneesInvalides('Vehicule duplique ou branche inconnue.')
-        ids.add(item['vehicle_id'])
-        temps_valide(item.get('scheduled_s'))
-    if 'A1' not in ids:
+        if arrivee.get('branch') not in ('N', 'S', 'E', 'O'):
+            raise DonneesInvalides('Vehicule duplique ou branche inconnue.')
+        identifiants.append(arrivee['vehicle_id'])
+        temps_valide(arrivee.get('scheduled_s'))
+    if 'A1' not in identifiants:
         raise DonneesInvalides('Le calendrier doit contenir A1.')
     return json_canonique(config)
