@@ -1,5 +1,4 @@
 import configparser
-import os
 
 
 # On garde au même endroit les réglages pour se connecter à MariaDB.
@@ -18,13 +17,10 @@ class ConnexionMariaDB:
         self.__user = db['user']
         self.__database = db.get('database', 'sae302')
 
-        # On prend le mot de passe de l’environnement en priorité.
-        if 'SAE_DB_PASSWORD' in os.environ:
-            self.__password = os.environ['SAE_DB_PASSWORD']
-        else:
-            self.__password = db.get('password', '')
+        # On lit le mot de passe dans le fichier INI privé.
+        self.__password = db.get('password', '')
         if not self.__password or self.__password == 'A_REMPLACER':
-            raise ValueError('Renseigner le mot de passe dans config.ini ou SAE_DB_PASSWORD.')
+            raise ValueError('Renseigner le mot de passe dans le fichier INI utilisé.')
 
     # On ouvre une connexion avec les réglages déjà lus.
     def connecter(self):
